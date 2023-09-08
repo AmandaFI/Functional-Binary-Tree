@@ -17,6 +17,10 @@ type CompareFnType<T> = (el1: T, el2: T) => CompareFnReturnType;
 
 type OrderType = "Inorder" | "Preorder" | "Postorder";
 type mapFnType<T> = (element: T, index?: number) => any;
+type filterFnType<T> = (element: T, index?: number) => boolean;
+type visitFilterFnType<T> = (element: T, index?: number) => T | T[];
+
+type functionaFnType<T> = mapFnType<T> | visitFilterFnType<T>;
 
 type successorType<T extends {}> = {
 	successor: NodeType<T>;
@@ -28,7 +32,8 @@ const binaryTree = <T extends {}>(
 	rootElement: T,
 	compareFn: CompareFnType<T> = (el1: T, el2: T) => (el1 > el2 ? 1 : 0)
 ) => {
-	if (typeof rootElement === "object" && !compareFn) throw Error("Unable to sort tree.");
+	if ((typeof rootElement === "object" && !compareFn) || typeof rootElement === "function")
+		throw Error("Unable to sort tree.");
 
 	const createNode = (element: T): NodeType<T> => {
 		return { element, left: null, right: null };
@@ -94,44 +99,53 @@ const binaryTree = <T extends {}>(
 
 	const visit = (
 		node: NodeType<T> = root,
-		fn: mapFnType<T>,
+		fn: functionaFnType<T>,
 		order?: OrderType,
 		values?: ReturnType<typeof fn>[]
 	): ReturnType<typeof fn>[] => {
 		order ??= "Inorder";
 		values ??= [];
+		const newElement = fn(node.element);
 		switch (order) {
 			case "Inorder":
-				if (node.left !== null) return visit(node.left, fn, order, values);
-				values = [...values, fn(node.element)];
-				if (node.right !== null) return visit(node.right, fn, order, values);
-				return values;
+				return [
+					...(node.left !== null ? visit(node.left, fn, order, values) : []),
+					...(Array.isArray(newElement) ? [] : [newElement]),
+					...(node.right !== null ? visit(node.right, fn, order, values) : []),
+				];
 			case "Preorder":
-				values = [...values, fn(node.element)];
-				if (node.left !== null) return visit(node.left, fn, order, values);
-				if (node.right !== null) return visit(node.right, fn, order, values);
-				return values;
+				return [
+					...(Array.isArray(newElement) ? [] : [newElement]),
+					...(node.left !== null ? visit(node.left, fn, order, values) : []),
+					...(node.right !== null ? visit(node.right, fn, order, values) : []),
+				];
 			case "Postorder":
-				if (node.left !== null) return visit(node.left, fn, order, values);
-				if (node.right !== null) return visit(node.right, fn, order, values);
-				values = [...values, fn(node.element)];
-				return values;
+				return [
+					...(node.left !== null ? visit(node.left, fn, order, values) : []),
+					...(node.right !== null ? visit(node.right, fn, order, values) : []),
+					...(Array.isArray(newElement) ? [] : [newElement]),
+				];
 
 			default:
 				const _exhaustiveCheck: never = order;
 		}
-
 		return values;
 	};
 
-	const map = (mapFn: mapFnType<T>): ReturnType<typeof mapFn>[] => {
+	const traverse = (order: OrderType = "Inorder"): T[] => {
 		if (empty) return [];
-		return visit(root, mapFn);
+		return visit(root, el => el, order);
 	};
 
-	const traverse = (): T[] => {
+	const map = (mapFn: mapFnType<T>, order: OrderType = "Inorder"): ReturnType<typeof mapFn>[] => {
 		if (empty) return [];
-		return visit(root, el => el, "Inorder");
+		return visit(root, mapFn, order);
+	};
+
+	const filter = (filterFn: filterFnType<T>, order: OrderType = "Inorder"): T[] => {
+		if (empty) return [];
+		const visitFilterFn = (el: T, index?: number): T | T[] => (filterFn(el, index) ? el : []);
+		return visit(root, visitFilterFn, order);
 	};
 
 	const searchNode = (value: T, node: NodeType<T> = root): boolean => {
@@ -149,16 +163,22 @@ const binaryTree = <T extends {}>(
 	const search = (element: T) => searchNode(element);
 	const remove = (element: T) => deleteNode(element);
 
-	return { root, add, traverse, search, remove };
+	return { root, add, traverse, search, remove, map, filter };
 };
 
-const tree = binaryTree(1);
+export default binaryTree;
+
+const tree = binaryTree(6);
 tree.add(5);
-tree.add(15);
-tree.add(2);
-tree.add(53);
-console.log(tree.search(21));
-console.log(tree.traverse());
+tree.add(1);
+tree.add(4);
+tree.add(7);
+tree.add(3);
+tree.add(8);
+
+// console.log(tree.search(21));
+// console.log(tree.traverse());
+console.log(tree.filter(el => el % 2 === 0, "Inorder"));
 
 const tree2 = binaryTree("oi");
 tree2.add("aaa");
