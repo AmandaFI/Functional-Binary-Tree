@@ -28,28 +28,27 @@ type successorType<T extends {}> = {
 };
 
 // {} allows all types except undefined and null
-const binaryTree = <T extends {}>(
-	rootElement: T,
-	compareFn: CompareFnType<T> = (el1: T, el2: T) => (el1 > el2 ? 1 : 0)
-) => {
+const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => {
 	if ((typeof rootElement === "object" && !compareFn) || typeof rootElement === "function")
-		throw Error("Unable to sort tree.");
+		throw new Error("Unable to sort tree.");
 
 	const createNode = (element: T): NodeType<T> => {
 		return { element, left: null, right: null };
 	};
 
+	compareFn ??= (el1: T, el2: T) => (el1 > el2 ? 1 : 0);
 	const root: NodeType<T> = createNode(rootElement);
 
 	let empty = false;
 
-	const addNode = (value: T, node: NodeType<T> = root) => {
-		if (empty) root.element = value;
+	const addNode = (element: T, node: NodeType<T> = root) => {
+		if (element === node.element) return;
+		if (empty) root.element = element;
 		else {
-			if (!compareFn(value, node.element))
-				node.left !== null ? addNode(value, node.left) : (node.left = createNode(value));
-			else if (compareFn(value, node.element))
-				node.right !== null ? addNode(value, node.right) : (node.right = createNode(value));
+			if (!compareFn!(element, node.element))
+				node.left !== null ? addNode(element, node.left) : (node.left = createNode(element));
+			else if (compareFn!(element, node.element))
+				node.right !== null ? addNode(element, node.right) : (node.right = createNode(element));
 		}
 	};
 
@@ -91,7 +90,7 @@ const binaryTree = <T extends {}>(
 			return true;
 		}
 
-		if (compareFn(value, node.element)) return deleteNode(value, node.right, node);
+		if (compareFn!(value, node.element)) return deleteNode(value, node.right, node);
 		else return deleteNode(value, node.left, node);
 	};
 
@@ -153,8 +152,8 @@ const binaryTree = <T extends {}>(
 
 		if (node.element === value) return true;
 		else {
-			if (!compareFn(value, node.element) && node.left !== null) return searchNode(value, node.left);
-			else if (compareFn(value, node.element) && node.right !== null) return searchNode(value, node.right);
+			if (!compareFn!(value, node.element) && node.left !== null) return searchNode(value, node.left);
+			else if (compareFn!(value, node.element) && node.right !== null) return searchNode(value, node.right);
 			return false;
 		}
 	};
@@ -166,35 +165,35 @@ const binaryTree = <T extends {}>(
 	return { root, add, traverse, search, remove, map, filter };
 };
 
-export default binaryTree;
+export { binaryTree };
 
-const tree = binaryTree(6);
-tree.add(5);
-tree.add(1);
-tree.add(4);
-tree.add(7);
-tree.add(3);
-tree.add(8);
+// const tree = binaryTree(6);
+// tree.add(5);
+// tree.add(1);
+// tree.add(4);
+// tree.add(7);
+// tree.add(3);
+// tree.add(8);
 
 // console.log(tree.search(21));
 // console.log(tree.traverse());
-console.log(tree.filter(el => el % 2 === 0, "Inorder"));
+// console.log(tree.filter(el => el % 2 === 0, "Inorder"));
 
-const tree2 = binaryTree("oi");
-tree2.add("aaa");
-console.log(tree2.traverse());
+// const tree2 = binaryTree("oi");
+// tree2.add("aaa");
+// console.log(tree2.traverse());
 
-type person = {
-	age: number;
-	name: string;
-};
+// type person = {
+// 	age: number;
+// 	name: string;
+// };
 
-const p1: person = { age: 20, name: "Johhhn" };
-const p2: person = { age: 25, name: "Doe" };
+// const p1: person = { age: 20, name: "Johhhn" };
+// const p2: person = { age: 25, name: "Doe" };
 
-const tree3 = binaryTree(p1, (n1: person, n2: person) => (n1.age > n2.age ? 1 : 0));
-tree3.add(p2);
-console.log(tree3.traverse());
+// const tree3 = binaryTree(p1, (n1: person, n2: person) => (n1.age > n2.age ? 1 : 0));
+// tree3.add(p2);
+// console.log(tree3.traverse());
 
 // const traverse = (): T[] => {
 // 	if (empty) return [];
