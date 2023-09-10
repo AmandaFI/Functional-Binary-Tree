@@ -12,17 +12,17 @@ type NodeType<T extends {}> = {
 	right: NodeType<T> | null;
 };
 
-type CompareFnReturnType = 0 | 1;
-type CompareFnType<T> = (el1: T, el2: T) => CompareFnReturnType;
+type CompareFnReturnType = -1 | 0 | 1;
+type CompareFnType<T extends {}> = (el1: T, el2: T) => CompareFnReturnType;
 
+// https://www.freecodecamp.org/news/binary-search-tree-traversal-inorder-preorder-post-order-for-bst/
 type OrderType = "Inorder" | "Preorder" | "Postorder";
-type mapFnType<T> = (element: T, index?: number) => any;
-type filterFnType<T> = (element: T, index?: number) => boolean;
-type visitFilterFnType<T> = (element: T, index?: number) => T | T[];
+type MapFnType<T> = (element: T, index?: number) => any;
+type FilterFnType<T> = (element: T, index?: number) => boolean;
+type ForEachFnType<T> = (element: T, index?: number) => void;
+type ReduceFnType<T> = (acc: any, element: T, index?: number) => any;
 
-type functionaFnType<T> = mapFnType<T> | visitFilterFnType<T>;
-
-type successorType<T extends {}> = {
+type SuccessorType<T extends {}> = {
 	successor: NodeType<T>;
 	successorParent: NodeType<T>;
 };
@@ -36,27 +36,35 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return { element, left: null, right: null };
 	};
 
-	compareFn ??= (el1: T, el2: T) => (el1 > el2 ? 1 : 0);
+	compareFn ??= (firstValue, secondValue) => (firstValue === secondValue ? 0 : firstValue > secondValue ? 1 : -1);
+	let nodeCount = 0;
 	const root: NodeType<T> = createNode(rootElement);
 
-	let empty = false;
+	// DECIDE IF ROOT CAN BE DELETED
 
+	// assertion typescript ?
 	const addNode = (element: T, node: NodeType<T> = root) => {
+		// if (compareFn === undefined) throw new Error("compareFn must not be undefined.");
 		if (element === node.element) return;
-		if (empty) root.element = element;
 		else {
-			if (!compareFn!(element, node.element))
+			if (compareFn!(element, node.element) === -1)
 				node.left !== null ? addNode(element, node.left) : (node.left = createNode(element));
-			else if (compareFn!(element, node.element))
+			else if (compareFn!(element, node.element) === 1)
 				node.right !== null ? addNode(element, node.right) : (node.right = createNode(element));
 		}
 	};
 
-	const inOrderSuccessor = (node: NodeType<T>, parent: NodeType<T>): successorType<T> => {
+	// reformar para retornar o sucessor em qualquer ordem e recebendo um node
+	const inOrderSuccessor = (node: NodeType<T>, parent: NodeType<T>): SuccessorType<T> => {
 		if (node.right === null && node.left === null) return { successor: node, successorParent: parent };
 
 		return node.left !== null ? inOrderSuccessor(node.left, node) : inOrderSuccessor(node.right as NodeType<T>, node);
 	};
+
+	const isLeaf = (node: NodeType<T>) => [node.left, node.right].every(node => node === null);
+	const hasTwoChildren = (node: NodeType<T>) => ![node.left, node.right].every(node => node === null);
+	const hasOnlyOneChild = (node: NodeType<T>) =>
+		(node.left !== null && node.right === null) || (node.left === null && node.right !== null);
 
 	const deleteLeafNode = (value: T, parent: NodeType<T>) => {
 		parent.left?.element === value ? (parent.left = null) : (parent.right = null);
@@ -79,81 +87,90 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	};
 
 	const deleteNode = (value: T, node: NodeType<T> | null = root, parent: NodeType<T> = root): boolean => {
-		if (node === null || empty) return false;
+		if (value === root.element && numberOfNodesInTree() === 1) throw new Error("Root deletion not allowed.");
+		if (node === null) return false;
 
 		if (node.element === value) {
-			if ([node.left, node.right].every(node => node === null)) {
-				if (node === parent) empty = true; // deleting root
-				deleteLeafNode(value, parent);
-			} else if ([node.left, node.right].every(node => node !== null)) deleteNodeWithTwoChildren(node, parent);
+			if (isLeaf(node)) deleteLeafNode(value, parent);
+			else if (hasTwoChildren(node)) deleteNodeWithTwoChildren(node, parent);
 			else deleteNodeWithOneChild(node, parent);
 			return true;
 		}
-
-		if (compareFn!(value, node.element)) return deleteNode(value, node.right, node);
-		else return deleteNode(value, node.left, node);
+		if (compareFn!(value, node.element) === -1) return deleteNode(value, node.left, node);
+		else if (compareFn!(value, node.element) === 1) return deleteNode(value, node.right, node);
+		return false;
 	};
 
-	// generalizar -- foreach -- map  -- reduce (sem usar reduce de array)
-
-	const visit = (
-		node: NodeType<T> = root,
-		fn: functionaFnType<T>,
-		order?: OrderType,
-		values?: ReturnType<typeof fn>[]
-	): ReturnType<typeof fn>[] => {
-		order ??= "Inorder";
-		values ??= [];
-		const newElement = fn(node.element);
+	const visit = (node: NodeType<T> | null = root, order: OrderType = "Inorder", values: T[] = []): T[] => {
+		if (node === null) return [];
+		const leftChildVisitResult = visit(node.left, order, values);
+		const rightChildVisitResult = visit(node.right, order, values);
 		switch (order) {
 			case "Inorder":
-				return [
-					...(node.left !== null ? visit(node.left, fn, order, values) : []),
-					...(Array.isArray(newElement) ? [] : [newElement]),
-					...(node.right !== null ? visit(node.right, fn, order, values) : []),
-				];
+				return [...leftChildVisitResult, node.element, ...rightChildVisitResult];
 			case "Preorder":
-				return [
-					...(Array.isArray(newElement) ? [] : [newElement]),
-					...(node.left !== null ? visit(node.left, fn, order, values) : []),
-					...(node.right !== null ? visit(node.right, fn, order, values) : []),
-				];
+				return [node.element, ...leftChildVisitResult, ...rightChildVisitResult];
 			case "Postorder":
-				return [
-					...(node.left !== null ? visit(node.left, fn, order, values) : []),
-					...(node.right !== null ? visit(node.right, fn, order, values) : []),
-					...(Array.isArray(newElement) ? [] : [newElement]),
-				];
-
+				return [...leftChildVisitResult, ...rightChildVisitResult, node.element];
 			default:
 				const _exhaustiveCheck: never = order;
+				throw new Error("Unknown order.");
 		}
-		return values;
 	};
 
-	const traverse = (order: OrderType = "Inorder"): T[] => {
-		if (empty) return [];
-		return visit(root, el => el, order);
+	const numberOfNodesInTree = (node: NodeType<T> = root) => {
+		return visit(node).length;
 	};
 
-	const map = (mapFn: mapFnType<T>, order: OrderType = "Inorder"): ReturnType<typeof mapFn>[] => {
-		if (empty) return [];
-		return visit(root, mapFn, order);
+	const recursiveMap = ([currentElement, ...rest]: T[], fn: MapFnType<T>, index: number = 0) => {
+		if (!currentElement) return [];
+
+		return [fn(currentElement, index), ...recursiveMap(rest, fn, index + 1)];
 	};
 
-	const filter = (filterFn: filterFnType<T>, order: OrderType = "Inorder"): T[] => {
-		if (empty) return [];
-		const visitFilterFn = (el: T, index?: number): T | T[] => (filterFn(el, index) ? el : []);
-		return visit(root, visitFilterFn, order);
+	const recursiveFilter = ([currentElement, ...rest]: T[], fn: FilterFnType<T>, index: number = 0) => {
+		if (!currentElement) return [];
+		const fnResult = fn(currentElement, index) ? [currentElement] : [];
+		return [...fnResult, ...recursiveFilter(rest, fn, index + 1)];
+	};
+
+	const recursiveReduce = (
+		array: T[],
+		fn: ReduceFnType<T>,
+		acc?: ReturnType<typeof fn>,
+		index: number = 0
+	): ReturnType<typeof fn> => {
+		if (array.length === 0) return acc;
+
+		if (!acc) [acc, ...array] = array;
+		return fn(acc, recursiveReduce(array, fn, acc, index + 1), index + 1);
+	};
+
+	const map = (mapFn: MapFnType<T>, order: OrderType = "Inorder"): ReturnType<typeof mapFn>[] => {
+		const elements = visit(root, order);
+		return recursiveMap(elements, mapFn);
+	};
+
+	const filter = (filterFn: FilterFnType<T>, order: OrderType = "Inorder"): T[] => {
+		const elements = visit(root, order);
+		return recursiveFilter(elements, filterFn);
+	};
+
+	const forEach = (fn: ForEachFnType<T>, order: OrderType = "Inorder"): void => {
+		const elements = visit(root, order);
+		for (let [index, element] of elements.entries()) fn(element, index);
+	};
+
+	const reduce = (fn: ReduceFnType<T>, acc = undefined, order: OrderType = "Inorder"): ReturnType<typeof fn> => {
+		const elements = visit(root, order);
+		return recursiveReduce(elements, fn, acc);
 	};
 
 	const searchNode = (value: T, node: NodeType<T> = root): boolean => {
-		if (empty) return false;
-
 		if (node.element === value) return true;
 		else {
-			if (!compareFn!(value, node.element) && node.left !== null) return searchNode(value, node.left);
-			else if (compareFn!(value, node.element) && node.right !== null) return searchNode(value, node.right);
+			if (compareFn!(value, node.element) === -1 && node.left !== null) return searchNode(value, node.left);
+			else if (compareFn!(value, node.element) === 1 && node.right !== null) return searchNode(value, node.right);
 			return false;
 		}
 	};
@@ -161,8 +178,9 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	const add = (element: T) => addNode(element);
 	const search = (element: T) => searchNode(element);
 	const remove = (element: T) => deleteNode(element);
+	const traverse = (order: OrderType) => visit(root, order);
 
-	return { root, add, traverse, search, remove, map, filter };
+	return { root, add, traverse, search, remove, map, filter, forEach, reduce };
 };
 
 export { binaryTree };
