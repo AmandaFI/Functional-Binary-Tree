@@ -11,6 +11,11 @@
 // DECIDE IF ROOT CAN BE DELETED
 // FAZER TESTES DE TUDO
 
+// corrigir delete, inOrderSucessor
+// na funçao parent, root nao tem parent, voltar false
+// incluir ponteiro para o parent
+// fazer o print da arvoer e depois ir para o p5.js
+
 // https://www.freecodecamp.org/news/binary-search-tree-traversal-inorder-preorder-post-order-for-bst/
 // assertion typescript ? --> console.assertion ou criar própria fn: https://stackoverflow.com/questions/15313418/what-is-assert-in-javascript
 
@@ -21,7 +26,7 @@ type NodeType<T extends {}> = {
 };
 
 type CompareFnReturnType = -1 | 0 | 1;
-type CompareFnType<T extends {}> = (el1: T, el2: T) => CompareFnReturnType;
+type CompareFnType<T extends {}> = (leftElement: T, rightElement: T) => CompareFnReturnType;
 
 type OrderType = "Inorder" | "Preorder" | "Postorder";
 
@@ -43,12 +48,24 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	compareFn ??= (firstValue, secondValue) => (firstValue === secondValue ? 0 : firstValue > secondValue ? 1 : -1);
 	const root: NodeType<T> = createNode(rootElement);
 
-	const isLeaf = (node: NodeType<T>) => [node.left, node.right].every(node => node === null);
+	const isLeaf = (node: NodeType<T>) => !node.left && !node.right;
+	// const isLeaf = (node: NodeType<T>) => !(node.left || node.right);
 
-	const hasTwoChildren = (node: NodeType<T>) => ![node.left, node.right].every(node => node === null);
+	// para escrever uma expressão negada dentro de um () --> negar tudo e inverter o operador
+	// A || B  --> !(!A && !B)
+	// !A || B  --> !(A && !B)
+	// A || !B  --> !(!A && B)
+	// A && B  --> !(!A || !B)
 
-	const hasOnlyOneChild = (node: NodeType<T>) =>
-		(node.left !== null && node.right === null) || (node.left === null && node.right !== null);
+	// const isLeaf = (node: NodeType<T>) => !(node.left && node.right);
+	// // [node.left, node.right].every(node => node === null);
+
+	const hasTwoChildren = (node: NodeType<T>) => node.left && node.right;
+	// [node.left, node.right].every(node => node === null);
+
+	const hasOnlyOneChild = (node: NodeType<T>) => !isLeaf(node) && !hasTwoChildren(node);
+	// (!node.left && node.right) || (node.left && !node.right);
+	// (node.left !== null && node.right === null) || (node.left === null && node.right !== null);
 
 	const nodeHeight = (rootNode: NodeType<T> | null = root, height = 0): number => {
 		if (rootNode === null) return height;
@@ -80,6 +97,11 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 			node.right !== null ? addNode(element, node.right) : (node.right = createNode(element));
 	};
 
+	const rightMostElement = (node: NodeType<T> = root) => {
+		if (isLeaf(node) || !node.right) return node.element;
+		rightMostElement(node.right);
+	};
+
 	const inOrderSuccessor = (node: NodeType<T>): NodeType<T> | false => {
 		const ancestralSuccessor = (node: NodeType<T>): NodeType<T> | false => {
 			const nodeParent = parent(node);
@@ -88,14 +110,22 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 			else if (nodeParent) return ancestralSuccessor(nodeParent);
 			return false;
 		};
-		const descendantSucessor = (node: NodeType<T>): NodeType<T> => {
-			if (node.right === null && node.left === null) return node;
-			return node.left !== null ? descendantSucessor(node.left) : node;
-		};
 
-		if (node.right && node.right.element === max()) return false;
-		else if (node.right) return descendantSucessor(node.right);
+		// if (node.right && node.right.element === rightMostElement()) return false;
+		if (node.right) return descendantSuccessor(node);
 		else return ancestralSuccessor(node);
+	};
+
+	const descendantSuccessor = (node: NodeType<T>): NodeType<T> => {
+		if (isLeaf(node)) {
+			throw new Error("leaf");
+		}
+		if (node.right) {
+			if (!node.right.left) return node.right;
+			// return descendantSuccessor(node.left);
+			return node.right.left;
+		}
+		throw new Error("not leaf and no right");
 	};
 
 	const deleteLeafNode = (value: T, parent: NodeType<T>) => {
@@ -111,7 +141,7 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		const successor = inOrderSuccessor(node);
 		if (!successor) deleteLeafNode(node.element, parent);
 		else {
-			deleteNode(node.element);
+			deleteNode(successor.element);
 			parent.left?.element === node.element
 				? (parent.left.element = successor.element)
 				: (parent.right!.element = successor.element);
@@ -133,10 +163,10 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return false;
 	};
 
-	const visit = (node: NodeType<T> | null = root, order: OrderType = "Inorder", values: T[] = []): NodeType<T>[] => {
+	const visit = (node: NodeType<T> | null = root, order: OrderType = "Inorder"): NodeType<T>[] => {
 		if (node === null) return [];
-		const leftChildVisitResult = visit(node.left, order, values);
-		const rightChildVisitResult = visit(node.right, order, values);
+		const leftChildVisitResult = visit(node.left, order);
+		const rightChildVisitResult = visit(node.right, order);
 		switch (order) {
 			case "Inorder":
 				return [...leftChildVisitResult, node, ...rightChildVisitResult];
@@ -162,11 +192,10 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return [...fnResult, ...recursiveFilter(rest, fn, index + 1)];
 	};
 
-	// BUG
 	const recursiveReduce = (array: NodeType<T>[], fn: ReduceFnType<T>, acc: any = undefined, index = 0): ReturnType<typeof fn> => {
 		if (array.length === 0) return acc;
 		if (acc === undefined) [acc.element, ...array] = array;
-		return fn(acc, recursiveReduce(array.slice(1), fn, acc, index + 1), index + 1);
+		return recursiveReduce(array.slice(1), fn, fn(acc, array[0].element, index + 1), index + 1);
 	};
 
 	const map = (mapFn: MapFnType<T>, rootNode: NodeType<T> = root, order: OrderType = "Inorder"): ReturnType<typeof mapFn>[] => {
@@ -203,35 +232,50 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return visit(node).length;
 	};
 
-	const numberOfLeafNodes = (node: NodeType<T> = root): number => {
-		let leafNodesCount = 0;
+	const leafNodeCount = (node: NodeType<T> = root): number => {
+		let count = 0;
 		nodeForEach(node => {
-			if (isLeaf(node)) leafNodesCount += 1;
+			if (isLeaf(node)) count += 1;
 		});
-		return leafNodesCount;
+		return count;
 	};
 
-	const numberOfOnlyOneChildNodes = (node: NodeType<T> = root) => {
-		let onlyOneChildNodesCount = 0;
+	const onlyOneChildNodeCount = (node: NodeType<T> = root) => {
+		let count = 0;
 		nodeForEach(node => {
-			if (hasOnlyOneChild(node)) onlyOneChildNodesCount += 1;
+			if (hasOnlyOneChild(node)) count += 1;
 		});
-		return onlyOneChildNodesCount;
+		return count;
 	};
 
-	const numberOfTwoChildrenNodes = (node: NodeType<T> = root) => {
-		let twoChildrenNodesCount = 0;
+	const twoChildrenNodeCount = (node: NodeType<T> = root) => {
+		let count = 0;
 		nodeForEach(node => {
-			if (hasTwoChildren(node)) twoChildrenNodesCount += 1;
+			if (hasTwoChildren(node)) count += 1;
 		});
-		return twoChildrenNodesCount;
+		return count;
 	};
 
 	const searchNode = (value: T, node: NodeType<T> = root): NodeType<T> | false => {
 		const comparison = compareFn!(value, node.element);
+
+		// switch (comparison) {
+		// 	case 0:
+		// 		return node;
+		// 	case -1:
+		// 		if (node.left !== null) return searchNode(value, node.left);
+		// 		break;
+		// 	case 1:
+		// 		if (node.right !== null) return searchNode(value, node.right);
+		// 		break;
+		// 	default:
+		// 		const _exhaustiveCheck: never = comparison;
+		// }
+		// return false;
+
 		if (comparison === 0) return node;
-		else if (comparison === -1 && node.left !== null) return searchNode(value, node.left);
-		else if (comparison === 1 && node.right !== null) return searchNode(value, node.right);
+		if (comparison === -1 && node.left) return searchNode(value, node.left);
+		if (comparison === 1 && node.right) return searchNode(value, node.right);
 		return false;
 	};
 
@@ -241,41 +285,60 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	const max = (node: NodeType<T> = root): T =>
 		reduce((acc, element) => (compareFn!(element, acc) === 1 ? element : acc), root, node);
 
-	const traverse = (rootNode: NodeType<T> = root, order: OrderType = "Inorder") => map(element => element, rootNode, order);
+	const traverse = (order: OrderType = "Inorder", rootNode: NodeType<T> = root) => map(element => element, rootNode, order);
 
 	const add = (element: T) => addNode(element);
 	const remove = (element: T) => deleteNode(element);
 	const search = (element: T) => (searchNode(element) ? true : false);
 	const height = (rootNode: NodeType<T> = root) => nodeHeight(rootNode);
 
-	return { root, add, traverse, search, remove, map, filter, forEach, reduce, min, max, inOrderSuccessor, validate, height };
+	return {
+		root,
+		add,
+		traverse,
+		search,
+		remove,
+		map,
+		filter,
+		forEach,
+		reduce,
+		min,
+		max,
+		inOrderSuccessor,
+		validate,
+		height,
+		descendantSuccessor,
+	};
 };
 
 export { binaryTree };
 
-const tree = binaryTree(6);
-tree.add(2);
-tree.add(9);
+const tree = binaryTree(10);
+tree.add(5);
 tree.add(1);
-tree.add(4);
-tree.add(8);
 tree.add(7);
-tree.add(13);
+tree.add(9);
+tree.add(15);
 tree.add(11);
-tree.add(12);
-tree.add(18);
+tree.add(17);
 // console.log(tree.validate(tree.root.right!));
+tree.remove(10);
 console.log(tree.traverse());
-console.log(`Root height: ${tree.height(tree.root)}`);
-console.log(`Left tree height: ${tree.height(tree.root.left!.left!)}`);
-console.log(`Right tree height: ${tree.height(tree.root.right!)}`);
 
-console.log(tree.map(element => element ** 2));
-console.log(tree.filter(element => element % 2 === 0));
-console.log(tree.reduce((acc, el) => (el % 2 === 0 ? acc + 1 : acc), 0));
+// console.log(tree.descendantSuccessor(tree.root));
+// console.log(tree.descendantSuccessor(tree.root.left!));
+// console.log(tree.descendantSuccessor(tree.root.right!));
 
-console.log(tree.max());
-console.log(tree.min());
+// console.log(`Root height: ${tree.height(tree.root)}`);
+// console.log(`Left tree height: ${tree.height(tree.root.left!.left!)}`);
+// console.log(`Right tree height: ${tree.height(tree.root.right!)}`);
+
+// console.log(tree.map(element => element ** 2));
+// console.log(tree.filter(element => element % 2 === 0));
+// console.log(tree.reduce((acc: number, el: number) => (el % 2 === 0 ? acc + 1 : acc), 0));
+
+// console.log(tree.max());
+// console.log(tree.min());
 
 // console.log(tree.search(21));
 // console.log(tree.inOrderSuccessor(tree.root.right!));
