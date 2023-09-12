@@ -6,6 +6,13 @@
 // min max DONE
 // verficiar validade da arvore ('todos os nós a esquerda são menores a direita são maiores') DONE
 // sucessor DONE
+// height DONE
+// using cached inOrderTraverse result ?
+// DECIDE IF ROOT CAN BE DELETED
+// FAZER TESTES DE TUDO
+
+// https://www.freecodecamp.org/news/binary-search-tree-traversal-inorder-preorder-post-order-for-bst/
+// assertion typescript ? --> console.assertion ou criar própria fn: https://stackoverflow.com/questions/15313418/what-is-assert-in-javascript
 
 type NodeType<T extends {}> = {
 	element: T;
@@ -16,18 +23,13 @@ type NodeType<T extends {}> = {
 type CompareFnReturnType = -1 | 0 | 1;
 type CompareFnType<T extends {}> = (el1: T, el2: T) => CompareFnReturnType;
 
-// https://www.freecodecamp.org/news/binary-search-tree-traversal-inorder-preorder-post-order-for-bst/
 type OrderType = "Inorder" | "Preorder" | "Postorder";
+
 type MapFnType<T> = (element: T, index?: number) => any;
 type FilterFnType<T> = (element: T, index?: number) => boolean;
 type ForEachFnType<T> = (element: T, index?: number) => void;
 type NodeForEachFnType<T extends {}> = (node: NodeType<T>, index?: number) => void;
 type ReduceFnType<T> = (acc: any, element: T, index?: number) => any;
-
-type SuccessorType<T extends {}> = {
-	successor: NodeType<T>;
-	successorParent: NodeType<T>;
-};
 
 // {} allows all types except undefined and null
 const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => {
@@ -40,43 +42,42 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 
 	compareFn ??= (firstValue, secondValue) => (firstValue === secondValue ? 0 : firstValue > secondValue ? 1 : -1);
 	const root: NodeType<T> = createNode(rootElement);
-	let inOrderTree: NodeType<T>[] | undefined = undefined;
 
-	// DECIDE IF ROOT CAN BE DELETED
-	// FAZER TESTES DE TUDO
+	const isLeaf = (node: NodeType<T>) => [node.left, node.right].every(node => node === null);
 
-	// assertion typescript ? --> console.assertion ou criar própria fn: https://stackoverflow.com/questions/15313418/what-is-assert-in-javascript
-	const addNode = (element: T, node: NodeType<T> = root) => {
-		if (element === node.element) return;
-		// else if (inOrderTree) inOrderTree = undefined;
-		else {
-			if (compareFn!(element, node.element) === -1)
-				node.left !== null ? addNode(element, node.left) : (node.left = createNode(element));
-			else if (compareFn!(element, node.element) === 1)
-				node.right !== null ? addNode(element, node.right) : (node.right = createNode(element));
-		}
+	const hasTwoChildren = (node: NodeType<T>) => ![node.left, node.right].every(node => node === null);
+
+	const hasOnlyOneChild = (node: NodeType<T>) =>
+		(node.left !== null && node.right === null) || (node.left === null && node.right !== null);
+
+	const nodeHeight = (rootNode: NodeType<T> | null = root, height = 0): number => {
+		if (rootNode === null) return height;
+		const leftHeight = nodeHeight(rootNode.left, height + 1);
+		const rightHeight = nodeHeight(rootNode.right, height + 1);
+		return Math.max(leftHeight, rightHeight);
 	};
 
-	// height = (max height between left and right subtrees) + 1
-	// const nodeHeight = (rootNode: NodeType<T> = root, height = 0): number => {
-	// 	if (isLeaf(rootNode)) return height + 1;
-	// 	const leftHeight = rootNode.left ? nodeHeight(rootNode.left, height + 1) : height;
-	// 	const rightHeight = rootNode.right ? nodeHeight(rootNode.right, height + 1) : height;
-	// 	return Math.max(leftHeight, rightHeight) + 1;
-	// };
-
-	// const nodeHeight = (rootNode: NodeType<T> | null = root, height = 0): number => {
-	// 	if (rootNode === null) return height;
-	// 	const leftHeight = nodeHeight(rootNode.left, height + 1);
-	// 	const rightHeight = nodeHeight(rootNode.right, height + 1);
-	// 	return Math.max(leftHeight, rightHeight) + 1;
-	// };
+	const parent = (node: NodeType<T>, parentNode: NodeType<T> = root, rootNode = root): NodeType<T> | false => {
+		const comparison = compareFn!(node.element, rootNode.element);
+		if (comparison === 0) return parentNode; // root's parent is root
+		else if (comparison === -1 && rootNode.left !== null) return parent(node, rootNode, rootNode.left);
+		else if (comparison === 1 && rootNode.right !== null) return parent(node, rootNode, rootNode.right);
+		return false; // never happens if used inside tree only
+	};
 
 	const validate = (rootNode: NodeType<T> | null = root): boolean => {
 		if (rootNode === null) return true;
 		if (rootNode.left && rootNode.left.element >= rootNode.element) return false;
 		else if (rootNode.right && rootNode.right.element <= rootNode.element) return false;
 		return true && validate(rootNode.left) && validate(rootNode.right);
+	};
+
+	const addNode = (element: T, node: NodeType<T> = root) => {
+		if (element === node.element) return;
+		if (compareFn!(element, node.element) === -1)
+			node.left !== null ? addNode(element, node.left) : (node.left = createNode(element));
+		else if (compareFn!(element, node.element) === 1)
+			node.right !== null ? addNode(element, node.right) : (node.right = createNode(element));
 	};
 
 	const inOrderSuccessor = (node: NodeType<T>): NodeType<T> | false => {
@@ -96,16 +97,6 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		else if (node.right) return descendantSucessor(node.right);
 		else return ancestralSuccessor(node);
 	};
-
-	// using cached inOrderTraverse result
-	// const inOrderSuccessor = (node: NodeType<T>): NodeType<T> => {
-	// 	const orderedTree = visit(root);
-	// };
-
-	const isLeaf = (node: NodeType<T>) => [node.left, node.right].every(node => node === null);
-	const hasTwoChildren = (node: NodeType<T>) => ![node.left, node.right].every(node => node === null);
-	const hasOnlyOneChild = (node: NodeType<T>) =>
-		(node.left !== null && node.right === null) || (node.left === null && node.right !== null);
 
 	const deleteLeafNode = (value: T, parent: NodeType<T>) => {
 		parent.left?.element === value ? (parent.left = null) : (parent.right = null);
@@ -135,7 +126,6 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 			if (isLeaf(node)) deleteLeafNode(value, parent);
 			else if (hasTwoChildren(node)) deleteNodeWithTwoChildren(node, parent);
 			else deleteNodeWithOneChild(node, parent);
-			// inOrderTree = undefined;
 			return true;
 		}
 		if (compareFn!(value, node.element) === -1) return deleteNode(value, node.left, node);
@@ -160,11 +150,6 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		}
 	};
 
-	// const display = (node: NodeType<T> | null = root, arrow: string = "") => {
-	// 	if (node === null) return ``;
-	// 	process.stdout.write(`(${display(node.left)} <-- ${node.element} -->  ${display(node.right)})`);
-	// };
-
 	const recursiveMap = ([currentNode, ...rest]: NodeType<T>[], fn: MapFnType<T>, index = 0): ReturnType<typeof fn>[] => {
 		if (!currentNode) return [];
 
@@ -177,9 +162,10 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return [...fnResult, ...recursiveFilter(rest, fn, index + 1)];
 	};
 
+	// BUG
 	const recursiveReduce = (array: NodeType<T>[], fn: ReduceFnType<T>, acc: any = undefined, index = 0): ReturnType<typeof fn> => {
 		if (array.length === 0) return acc;
-		if (!acc) [acc.element, ...array] = array;
+		if (acc === undefined) [acc.element, ...array] = array;
 		return fn(acc, recursiveReduce(array.slice(1), fn, acc, index + 1), index + 1);
 	};
 
@@ -249,26 +235,20 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return false;
 	};
 
-	// root's parent is root
-	const parent = (node: NodeType<T>, parentNode: NodeType<T> = root, rootNode = root): NodeType<T> | false => {
-		const comparison = compareFn!(node.element, rootNode.element);
-		if (comparison === 0) return parentNode;
-		else if (comparison === -1 && rootNode.left !== null) return parent(node, rootNode, rootNode.left);
-		else if (comparison === 1 && rootNode.right !== null) return parent(node, rootNode, rootNode.right);
-		return false; // never happens
-	};
+	const min = (node: NodeType<T> = root): T =>
+		reduce((acc, element) => (compareFn!(element, acc) === -1 ? element : acc), root, node);
 
-	const min = (node: NodeType<T> = root): T => reduce((acc, element) => (element < acc ? acc : element), root, node);
-	const max = (node: NodeType<T> = root): T => reduce((acc, element) => (element > acc ? acc : element), root, node);
+	const max = (node: NodeType<T> = root): T =>
+		reduce((acc, element) => (compareFn!(element, acc) === 1 ? element : acc), root, node);
+
+	const traverse = (rootNode: NodeType<T> = root, order: OrderType = "Inorder") => map(element => element, rootNode, order);
 
 	const add = (element: T) => addNode(element);
 	const remove = (element: T) => deleteNode(element);
 	const search = (element: T) => (searchNode(element) ? true : false);
-	const traverse = (rootNode: NodeType<T> = root, order: OrderType = "Inorder") => map(element => element, rootNode, order);
-	// const height = (rootNode: NodeType<T> = root) => nodeHeight(rootNode);
+	const height = (rootNode: NodeType<T> = root) => nodeHeight(rootNode);
 
-	return { root, add, traverse, search, remove, map, filter, forEach, reduce, min, max, inOrderSuccessor, validate };
-	// return { root, add, traverse, search, remove, map, filter, forEach, reduce, min, max, inOrderSuccessor, validate, height };
+	return { root, add, traverse, search, remove, map, filter, forEach, reduce, min, max, inOrderSuccessor, validate, height };
 };
 
 export { binaryTree };
@@ -282,10 +262,21 @@ tree.add(8);
 tree.add(7);
 tree.add(13);
 tree.add(11);
-tree.add(5);
+tree.add(12);
 tree.add(18);
 // console.log(tree.validate(tree.root.right!));
-console.log(tree.height(tree.root));
+console.log(tree.traverse());
+console.log(`Root height: ${tree.height(tree.root)}`);
+console.log(`Left tree height: ${tree.height(tree.root.left!.left!)}`);
+console.log(`Right tree height: ${tree.height(tree.root.right!)}`);
+
+console.log(tree.map(element => element ** 2));
+console.log(tree.filter(element => element % 2 === 0));
+console.log(tree.reduce((acc, el) => (el % 2 === 0 ? acc + 1 : acc), 0));
+
+console.log(tree.max());
+console.log(tree.min());
+
 // console.log(tree.search(21));
 // console.log(tree.inOrderSuccessor(tree.root.right!));
 // tree.display();
