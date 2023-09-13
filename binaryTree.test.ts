@@ -10,56 +10,34 @@
 
 import { binaryTree } from "./binaryTree";
 
-describe("Create tree.", () => {
-	test("Do not allow object type elements without comparison function.", () => {
+describe("Create node:", () => {
+	let tree: ReturnType<typeof binaryTree<number>>;
+	beforeEach(() => (tree = binaryTree(1)));
+	test("Without parent", () => {
+		expect(tree.createNode(10)).toEqual({ element: 10, left: null, right: null, parent: null });
+	});
+
+	test("With parent", () => {
+		expect(tree.createNode(10, tree.root)).toEqual({
+			element: 10,
+			left: null,
+			right: null,
+			parent: { element: 1, left: null, right: null, parent: null },
+		});
+	});
+});
+
+describe("Create tree:", () => {
+	test("With object type elements without comparison function.", () => {
 		expect(() => {
 			binaryTree({ name: "Michael", age: 45 });
 		}).toThrow();
 	});
 
-	test("Do not allow functions element.", () => {
+	test("With function type element.", () => {
 		expect(() => {
 			binaryTree(() => 1);
 		}).toThrow();
-	});
-});
-
-describe("Add element.", () => {
-	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeEach(() => (tree = binaryTree(10)));
-
-	test("Add left child to root.", () => {
-		tree.add(5);
-		expect(tree.traverse()).toEqual([5, 10]);
-	});
-
-	test("Add left child to left root subtree.", () => {
-		tree.add(5);
-		tree.add(1);
-		expect(tree.traverse()).toEqual([1, 5, 10]);
-	});
-
-	test("Add right child to left root subtree.", () => {
-		tree.add(5);
-		tree.add(7);
-		expect(tree.traverse()).toEqual([5, 7, 10]);
-	});
-
-	test("Add right child to root.", () => {
-		tree.add(15);
-		expect(tree.traverse()).toEqual([10, 15]);
-	});
-
-	test("Add left child to right root subtree.", () => {
-		tree.add(15);
-		tree.add(11);
-		expect(tree.traverse()).toEqual([10, 11, 15]);
-	});
-
-	test("Add right child to right root subtree.", () => {
-		tree.add(15);
-		tree.add(17);
-		expect(tree.traverse()).toEqual([10, 15, 17]);
 	});
 });
 
@@ -70,19 +48,19 @@ describe("Add element.", () => {
 // 1  4   8  13
 //    /       \
 //   3         18
-
-describe("Traverse tree.", () => {
+// USAR CREATE NODE
+describe("Traverse tree:", () => {
 	let tree: ReturnType<typeof binaryTree<number>>;
 	beforeEach(() => {
 		tree = binaryTree(6);
-		tree.add(2);
-		tree.add(9);
-		tree.add(1);
-		tree.add(4);
-		tree.add(8);
-		tree.add(13);
-		tree.add(3);
-		tree.add(18);
+		tree.root.left = tree.createNode(2, tree.root);
+		tree.root.left.left = tree.createNode(1, tree.root.left);
+		tree.root.left.right = tree.createNode(4, tree.root.left);
+		tree.root.left.right.left = tree.createNode(3, tree.root.left.right);
+		tree.root.right = tree.createNode(9, tree.root);
+		tree.root.right.left = tree.createNode(8, tree.root.right);
+		tree.root.right.right = tree.createNode(13, tree.root.right);
+		tree.root.right.right.right = tree.createNode(18, tree.root.right.right);
 	});
 
 	test("Inorder", () => {
@@ -98,6 +76,96 @@ describe("Traverse tree.", () => {
 	});
 });
 
+describe("Add:", () => {
+	let tree: ReturnType<typeof binaryTree<number>>;
+	beforeEach(() => (tree = binaryTree(10)));
+
+	test("Left child to root.", () => {
+		tree.add(5);
+		expect(tree.traverse()).toEqual([5, 10]);
+	});
+
+	test("Left child to left root subtree.", () => {
+		tree.add(5);
+		tree.add(1);
+		expect(tree.traverse()).toEqual([1, 5, 10]);
+	});
+
+	test("Right child to left root subtree.", () => {
+		tree.add(5);
+		tree.add(7);
+		expect(tree.traverse()).toEqual([5, 7, 10]);
+	});
+
+	test("Right child to root.", () => {
+		tree.add(15);
+		expect(tree.traverse()).toEqual([10, 15]);
+	});
+
+	test("Left child to right root subtree.", () => {
+		tree.add(15);
+		tree.add(11);
+		expect(tree.traverse()).toEqual([10, 11, 15]);
+	});
+
+	test("Right child to right root subtree.", () => {
+		tree.add(15);
+		tree.add(17);
+		expect(tree.traverse()).toEqual([10, 15, 17]);
+	});
+});
+
+//      10
+//     /  \
+//    5    15
+//  /\     /
+// 1  7   12
+//     \  /
+//     9  11
+
+describe("Replace:", () => {
+	let tree: ReturnType<typeof binaryTree<number>>;
+	beforeEach(() => {
+		tree = binaryTree(10);
+		tree.add(5);
+		tree.add(1);
+		tree.add(7);
+		tree.add(9);
+		tree.add(15);
+		tree.add(12);
+		tree.add(11);
+	});
+
+	test("Root.", () => {
+		const replacer = tree.inOrderReplacer(tree.root);
+		expect(replacer ? replacer.element : false).toBe(11);
+	});
+
+	test("Node with right subtree only.", () => {
+		const replacer = tree.inOrderReplacer(tree.root.left!.right!);
+		expect(replacer ? replacer.element : false).toBe(9);
+	});
+
+	test("Node with left subtree only.", () => {
+		const replacer = tree.inOrderReplacer(tree.root.right!.left!);
+		expect(replacer ? replacer.element : false).toBe(15);
+	});
+
+	test("Node with left and right subtrees.", () => {
+		const replacer = tree.inOrderReplacer(tree.root.left!);
+		expect(replacer ? replacer.element : false).toBe(7);
+	});
+
+	test("Greatest tree node.", () => {
+		const replacer = tree.inOrderReplacer(tree.root.right!);
+		expect(replacer ? replacer.element : false).toBe(false);
+	});
+
+	// test("Smallest tree node.", () => {
+	// 	expect(tree.remove(100)).toBe(false);
+	// });
+});
+
 //      10
 //     /  \
 //    5    15
@@ -106,7 +174,7 @@ describe("Traverse tree.", () => {
 //     \
 //     9
 
-describe("Delete element.", () => {
+describe("Delete:", () => {
 	let tree: ReturnType<typeof binaryTree<number>>;
 	beforeEach(() => {
 		tree = binaryTree(10);
@@ -119,33 +187,32 @@ describe("Delete element.", () => {
 		tree.add(17);
 	});
 
-	test("Delete leaf node.", () => {
+	test("Leaf node.", () => {
 		tree.remove(11);
 		expect(tree.traverse()).toEqual([1, 5, 7, 9, 10, 15, 17]);
 	});
 
-	test("Delete node with only one child.", () => {
+	test("Node with only one child.", () => {
 		tree.remove(7);
 		expect(tree.traverse()).toEqual([1, 5, 9, 10, 11, 15, 17]);
 	});
 
-	test("Delete node with two child from root left subtree.", () => {
+	test("Node with two child from root left subtree.", () => {
 		tree.remove(5);
 		expect(tree.traverse()).toEqual([1, 7, 9, 10, 11, 15, 17]);
 	});
 
-	test("Delete node with two child from root right subtree.", () => {
+	test("Node with two child from root right subtree.", () => {
 		tree.remove(15);
 		expect(tree.traverse()).toEqual([1, 5, 7, 9, 10, 11, 17]);
 	});
 
-	// test("Dot not allow root to be deleted.", () => {
-	// 	expect(() => {
-	// 		tree.remove(10);
-	// 	}).toThrow();
-	// });
+	test("Root but tree still has other nodes.", () => {
+		tree.remove(10);
+		expect(tree.traverse()).toEqual([1, 5, 7, 9, 11, 15, 17]);
+	});
 
-	test("Delete element that is not in the tree.", () => {
+	test("Element that is not in the tree.", () => {
 		expect(tree.remove(100)).toBe(false);
 	});
 });
