@@ -11,9 +11,6 @@
 // DECIDE IF ROOT CAN BE DELETED
 // FAZER TESTES DE TUDO
 
-// corrigir delete, inOrderSucessor
-// na funçao parent, root nao tem parent, voltar false
-// incluir ponteiro para o parent
 // fazer o print da arvoer e depois ir para o p5.js
 
 // https://www.freecodecamp.org/news/binary-search-tree-traversal-inorder-preorder-post-order-for-bst/
@@ -30,6 +27,8 @@ type CompareFnReturnType = -1 | 0 | 1;
 type CompareFnType<T extends {}> = (leftElement: T, rightElement: T) => CompareFnReturnType;
 
 type OrderType = "Inorder" | "Preorder" | "Postorder";
+type NodeKindType = "Leaf" | "OneChild" | "TwoChildren";
+type NodeKindFn<T extends {}> = (node: NodeType<T>) => boolean;
 
 type MapFnType<T> = (element: T, index?: number) => any;
 type FilterFnType<T> = (element: T, index?: number) => boolean;
@@ -49,12 +48,12 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	compareFn ??= (firstValue, secondValue) => (firstValue === secondValue ? 0 : firstValue > secondValue ? 1 : -1);
 	const root: NodeType<T> = createNode(rootElement);
 
-	const isLeaf = (node: NodeType<T>) => !node.left && !node.right;
+	const isLeaf: NodeKindFn<T> = (node: NodeType<T>) => !node.left && !node.right;
 	// const isLeaf = (node: NodeType<T>) => !(node.left || node.right);
 
-	const hasTwoChildren = (node: NodeType<T>) => node.left && node.right;
+	const hasTwoChildren: NodeKindFn<T> = (node: NodeType<T>) => (node.left && node.right ? true : false);
 
-	const hasOnlyOneChild = (node: NodeType<T>) => !isLeaf(node) && !hasTwoChildren(node);
+	const hasOnlyOneChild: NodeKindFn<T> = (node: NodeType<T>) => !isLeaf(node) && !hasTwoChildren(node);
 	// (!node.left && node.right) || (node.left && !node.right);
 
 	const nodeHeight = (rootNode: NodeType<T> | null = root, height = 0): number => {
@@ -97,8 +96,9 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 
 	const inOrderReplacer = (node: NodeType<T>): NodeType<T> | false => {
 		if (node.right) {
-			if (!node.right.left) return node.right;
-			return node.right.left;
+			node = node.right;
+			while (node.left) node = node.left;
+			return node;
 		} else {
 			if (!node.parent) return false;
 			return ancestralReplacer(node);
@@ -125,7 +125,7 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	};
 
 	const deleteNode = (element: T, node: NodeType<T> | null = root): boolean => {
-		if (element === root.element && numberOfNodes() === 1) throw new Error("Root deletion not allowed.");
+		if (element === root.element && nodeCount() === 1) throw new Error("Root deletion not allowed.");
 		if (!node) return false;
 
 		if (node.element === element) {
@@ -205,37 +205,32 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		for (let [index, node] of orderedNodes.entries()) fn(node, index);
 	};
 
-	const numberOfNodes = (node: NodeType<T> = root) => {
-		return visit(node).length;
-	};
-
-	const leafNodeCount = (node: NodeType<T> = root): number => {
+	const nodeCount = (node: NodeType<T> = root, kind?: NodeKindType): number => {
+		if (!kind) return visit(node).length;
+		let kindCheckFn: NodeKindFn<T>;
+		switch (kind) {
+			case "Leaf":
+				kindCheckFn = isLeaf;
+				break;
+			case "OneChild":
+				kindCheckFn = hasOnlyOneChild;
+				break;
+			case "TwoChildren":
+				kindCheckFn = hasTwoChildren;
+				break;
+			default:
+				const _exhaustiveCheck: never = kind;
+				throw new Error("Unknown node kind.");
+		}
 		let count = 0;
 		nodeForEach(node => {
-			if (isLeaf(node)) count += 1;
-		});
-		return count;
-	};
-
-	const onlyOneChildNodeCount = (node: NodeType<T> = root) => {
-		let count = 0;
-		nodeForEach(node => {
-			if (hasOnlyOneChild(node)) count += 1;
-		});
-		return count;
-	};
-
-	const twoChildrenNodeCount = (node: NodeType<T> = root) => {
-		let count = 0;
-		nodeForEach(node => {
-			if (hasTwoChildren(node)) count += 1;
+			if (kindCheckFn(node)) count += 1;
 		});
 		return count;
 	};
 
 	const searchNode = (value: T, node: NodeType<T> = root): NodeType<T> | false => {
 		const comparison = compareFn!(value, node.element);
-
 		if (comparison === 0) return node;
 		if (comparison === -1 && node.left) return searchNode(value, node.left);
 		if (comparison === 1 && node.right) return searchNode(value, node.right);
