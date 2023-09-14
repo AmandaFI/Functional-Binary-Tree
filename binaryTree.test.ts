@@ -12,7 +12,7 @@ import { binaryTree } from "./binaryTree";
 
 describe("Create node:", () => {
 	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeEach(() => (tree = binaryTree(1)));
+	beforeAll(() => (tree = binaryTree(1)));
 	test("Without parent", () => {
 		expect(tree.createNode(10)).toEqual({ element: 10, left: null, right: null, parent: null });
 	});
@@ -39,6 +39,10 @@ describe("Create tree:", () => {
 			binaryTree(() => 1);
 		}).toThrow();
 	});
+
+	test("Normally", () => {
+		expect(binaryTree(10).root).toEqual({ element: 10, left: null, right: null, parent: null });
+	});
 });
 
 //      6
@@ -48,10 +52,9 @@ describe("Create tree:", () => {
 // 1  4   8  13
 //    /       \
 //   3         18
-// USAR CREATE NODE
 describe("Traverse tree:", () => {
 	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeEach(() => {
+	beforeAll(() => {
 		tree = binaryTree(6);
 		tree.root.left = tree.createNode(2, tree.root);
 		tree.root.left.left = tree.createNode(1, tree.root.left);
@@ -78,40 +81,42 @@ describe("Traverse tree:", () => {
 
 describe("Add:", () => {
 	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeEach(() => (tree = binaryTree(10)));
+	beforeAll(() => (tree = binaryTree(10)));
 
 	test("Left child to root.", () => {
 		tree.add(5);
-		expect(tree.traverse()).toEqual([5, 10]);
+		expect(tree.root.left?.element).toBe(5);
+		expect(tree.root.left?.parent?.element).toBe(10);
 	});
 
 	test("Left child to left root subtree.", () => {
-		tree.add(5);
 		tree.add(1);
-		expect(tree.traverse()).toEqual([1, 5, 10]);
+		expect(tree.root.left?.left ? tree.root.left?.left.element : false).toBe(1);
+		expect(tree.root.left?.left ? tree.root.left?.left.parent?.element : false).toBe(5);
 	});
 
 	test("Right child to left root subtree.", () => {
-		tree.add(5);
 		tree.add(7);
-		expect(tree.traverse()).toEqual([5, 7, 10]);
+		expect(tree.root.left?.right ? tree.root.left?.right.element : false).toBe(7);
+		expect(tree.root.left?.right ? tree.root.left?.right.parent?.element : false).toBe(5);
 	});
 
 	test("Right child to root.", () => {
 		tree.add(15);
-		expect(tree.traverse()).toEqual([10, 15]);
+		expect(tree.root.right?.element).toBe(15);
+		expect(tree.root.right?.parent?.element).toBe(10);
 	});
 
 	test("Left child to right root subtree.", () => {
-		tree.add(15);
 		tree.add(11);
-		expect(tree.traverse()).toEqual([10, 11, 15]);
+		expect(tree.root.right?.left ? tree.root.right?.left.element : false).toBe(11);
+		expect(tree.root.right?.left ? tree.root.right?.left.parent?.element : false).toBe(15);
 	});
 
 	test("Right child to right root subtree.", () => {
-		tree.add(15);
 		tree.add(17);
-		expect(tree.traverse()).toEqual([10, 15, 17]);
+		expect(tree.root.right?.right ? tree.root.right?.right.element : false).toBe(17);
+		expect(tree.root.right?.right ? tree.root.right?.right.parent?.element : false).toBe(15);
 	});
 });
 
@@ -123,9 +128,9 @@ describe("Add:", () => {
 //     \  /
 //     9  11
 
-describe("Replace:", () => {
+describe("Find replacer for:", () => {
 	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeEach(() => {
+	beforeAll(() => {
 		tree = binaryTree(10);
 		tree.add(5);
 		tree.add(1);
@@ -160,10 +165,36 @@ describe("Replace:", () => {
 		const replacer = tree.inOrderReplacer(tree.root.right!);
 		expect(replacer ? replacer.element : false).toBe(false);
 	});
+});
 
-	// test("Smallest tree node.", () => {
-	// 	expect(tree.remove(100)).toBe(false);
-	// });
+describe("Search:", () => {
+	let tree: ReturnType<typeof binaryTree<number>>;
+	beforeAll(() => {
+		tree = binaryTree(10);
+		tree.add(5);
+		tree.add(1);
+		tree.add(7);
+		tree.add(9);
+		tree.add(15);
+		tree.add(12);
+		tree.add(11);
+	});
+
+	test("Element that exists in a leaf node.", () => {
+		expect(tree.search(11)).toBe(true);
+	});
+
+	test("Element that exists in a one child node.", () => {
+		expect(tree.search(7)).toBe(true);
+	});
+
+	test("Element that exists in a two children node.", () => {
+		expect(tree.search(5)).toBe(true);
+	});
+
+	test("Element that does not exists in the tree.", () => {
+		expect(tree.search(100)).toBe(false);
+	});
 });
 
 //      10
