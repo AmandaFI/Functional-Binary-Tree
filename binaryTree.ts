@@ -117,15 +117,15 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	};
 
 	const deleteNodeWithTwoChildren = (node: NodeType<T>, parent: NodeType<T> | null) => {
-		const successor = inOrderReplacer(node);
-		if (!successor) throw new Error("Node with two children without parent.");
-		deleteNode(successor.element);
-		if (!parent) root.element = successor.element;
-		else parent.left === node ? (parent.left.element = successor.element) : (parent.right!.element = successor.element);
+		const replacer = inOrderReplacer(node);
+		if (!replacer) throw new Error("Node with two children without parent.");
+		deleteNode(replacer.element);
+		if (!parent) root.element = replacer.element;
+		else parent.left === node ? (parent.left.element = replacer.element) : (parent.right!.element = replacer.element);
 	};
 
 	const deleteNode = (element: T, node: NodeType<T> | null = root): boolean => {
-		if (element === root.element && nodeCount() === 1) throw new Error("Root deletion not allowed.");
+		if (element === root.element && isLeaf(root)) throw new Error("Root deletion not allowed.");
 		if (!node) return false;
 
 		if (node.element === element) {
@@ -224,7 +224,7 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		}
 		let count = 0;
 		nodeForEach(node => {
-			if (kindCheckFn(node)) count += 1;
+			if (kindCheckFn(node)) count++;
 		});
 		return count;
 	};
@@ -250,42 +250,28 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	const search = (element: T) => (searchNode(element) ? true : false);
 	const height = (rootNode: NodeType<T> = root) => nodeHeight(rootNode);
 
-	// return !debug
-	// 	? {
-	// 			root,
-	// 			add,
-	// 			traverse,
-	// 			search,
-	// 			remove,
-	// 			map,
-	// 			filter,
-	// 			forEach,
-	// 			reduce,
-	// 			min,
-	// 			max,
-	// 			validate,
-	// 			height,
-	// 	  }
-	// 	: {
-	// 			root,
-	// 			add,
-	// 			traverse,
-	// 			search,
-	// 			remove,
-	// 			map,
-	// 			filter,
-	// 			forEach,
-	// 			reduce,
-	// 			min,
-	// 			max,
-	// 			inOrderSuccessor,
-	// 			validate,
-	// 			height,
-	// 			descendantSuccessor,
-	// 			createNode,
-	// 	  };
+	function getCol(h: number): number {
+		return 2 ** h - 1;
+	}
+
+	function printTree(M: any, root: NodeType<T> | null, col: number, row: number, height: number): any {
+		if (root === null) {
+			return;
+		}
+		M[row][col] = isLeaf(root)
+			? root.element
+			: hasTwoChildren(root)
+			? `\u2BB6${root.element}\u2BB7`
+			: root.left
+			? `\u2BB6${root.element}`
+			: `${root.element}\u2BB7`;
+		printTree(M, root.left, col - Math.pow(2, height - 2), row + 1, height - 1);
+		printTree(M, root.right, col + Math.pow(2, height - 2), row + 1, height - 1);
+	}
 
 	return {
+		getCol,
+		printTree,
 		root,
 		add,
 		traverse,
@@ -303,6 +289,10 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		createNode,
 		inOrderReplacer,
 		ancestralReplacer,
+		hasTwoChildren,
+		isLeaf,
+		hasOnlyOneChild,
+		nodeHeight,
 	};
 };
 
@@ -312,10 +302,33 @@ const tree = binaryTree(10);
 tree.add(5);
 tree.add(1);
 tree.add(7);
+tree.add(6);
+tree.add(8);
 tree.add(9);
 tree.add(15);
+tree.add(13);
+tree.add(12);
 tree.add(11);
 tree.add(17);
-// console.log(tree.validate(tree.root.right!));
-tree.remove(10);
-console.log(tree.traverse());
+
+// const h = tree.height(tree.root);
+// const col = tree.getCol(h);
+// console.log(`cols: ${col}`);
+// const M = new Array(h).fill(0).map(() => new Array(col).fill(0));
+// tree.printTree(M, tree.root, Math.floor(col / 2), 0, h);
+
+// for (let i = 0; i < M.length; i++) {
+// 	let row = "";
+// 	for (let j = 0; j < M[i].length; j++) {
+// 		if (M[i][j] === 0) {
+// 			row = row + " ";
+// 		} else {
+// 			row = row + M[i][j] + " ";
+// 		}
+// 	}
+// 	console.log(row);
+// }
+
+// // console.log(tree.validate(tree.root.right!));
+// tree.remove(10);
+// console.log(tree.traverse());

@@ -200,11 +200,68 @@ describe("Search:", () => {
 //      10
 //     /  \
 //    5    15
+//  /\     /
+// 1  7   12
+
+describe("Node type:", () => {
+	let tree: ReturnType<typeof binaryTree<number>>;
+	beforeAll(() => {
+		tree = binaryTree(10);
+		tree.add(5);
+		tree.add(1);
+		tree.add(7);
+		tree.add(15);
+		tree.add(12);
+	});
+
+	test("Is leaf.", () => {
+		expect(tree.isLeaf(tree.root.right!.left!)).toBe(true);
+		expect(tree.isLeaf(tree.root.left!)).toBe(false);
+	});
+
+	test("Has only on child.", () => {
+		expect(tree.hasOnlyOneChild(tree.root.right!)).toBe(true);
+		expect(tree.hasOnlyOneChild(tree.root.right!.left!)).toBe(false);
+	});
+
+	test("Has two children.", () => {
+		expect(tree.hasTwoChildren(tree.root.left!)).toBe(true);
+		expect(tree.hasTwoChildren(tree.root.right!)).toBe(false);
+	});
+});
+
+describe("Node hegiht:", () => {
+	let tree: ReturnType<typeof binaryTree<number>>;
+	beforeAll(() => {
+		tree = binaryTree(10);
+		tree.add(5);
+		tree.add(1);
+		tree.add(7);
+		tree.add(15);
+		tree.add(12);
+	});
+
+	test("Leaf.", () => {
+		expect(tree.nodeHeight(tree.root.right!.left!)).toBe(1);
+	});
+
+	test("Root.", () => {
+		expect(tree.nodeHeight(tree.root)).toBe(3);
+	});
+
+	test("Subtree.", () => {
+		expect(tree.nodeHeight(tree.root.left!)).toBe(2);
+	});
+});
+
+//      10
+//     /  \
+//    5    15
 //  /\     /\
 // 1  7   11  17
 //     \
 //     9
-
+// -> Testar deletar root quando é o único elemento da árvore
 describe("Delete:", () => {
 	let tree: ReturnType<typeof binaryTree<number>>;
 	beforeEach(() => {
@@ -220,26 +277,31 @@ describe("Delete:", () => {
 
 	test("Leaf node.", () => {
 		tree.remove(11);
+		expect(tree.root.right?.left).toBe(null);
 		expect(tree.traverse()).toEqual([1, 5, 7, 9, 10, 15, 17]);
 	});
 
 	test("Node with only one child.", () => {
 		tree.remove(7);
+		expect(tree.root.left?.right?.element).toBe(9);
 		expect(tree.traverse()).toEqual([1, 5, 9, 10, 11, 15, 17]);
 	});
 
 	test("Node with two child from root left subtree.", () => {
 		tree.remove(5);
+		expect(tree.root.left?.element).toBe(7);
 		expect(tree.traverse()).toEqual([1, 7, 9, 10, 11, 15, 17]);
 	});
 
 	test("Node with two child from root right subtree.", () => {
 		tree.remove(15);
+		expect(tree.root.right?.element).toBe(17);
 		expect(tree.traverse()).toEqual([1, 5, 7, 9, 10, 11, 17]);
 	});
 
 	test("Root but tree still has other nodes.", () => {
 		tree.remove(10);
+		expect(tree.root.element).toBe(11);
 		expect(tree.traverse()).toEqual([1, 5, 7, 9, 11, 15, 17]);
 	});
 
