@@ -5,6 +5,8 @@
 // The spacing between nodes in a given level is calculated by the canvas width divided by the maximun number of nodes that the level accommodates.
 // The spacing between levels is calculated by the canvas height divided by the number of levels in the tree.
 
+// generators pode melhorar a performance do meu codigo ?
+
 let TREE = null;
 let NODE_RADIUS = 40;
 let NODE_COLOR = "#ffa07a";
@@ -14,8 +16,15 @@ let HIGHLIGHTED_NODE_COLOR = "#00ff00";
 let ELEMENT_COLOR = 0;
 let pathTraveled = [];
 let highlightedNode = null;
+let searchingNode = null;
 let inputBox, addBtn, deleteBtn, searchBtn;
 let BACKGROUND_COLOR = "#171c26";
+let traversePath = [];
+let speed = 300;
+let REMOVE_NODE = null;
+let REPLACER_NODE_ONE_CHILD = null;
+let REPLACER_NODE_TWO_CHILDREN = null;
+let TRAVERSE_NODE = null;
 
 const binaryTree = (rootElement, compareFn) => {
 	if ((typeof rootElement === "object" && !compareFn) || typeof rootElement === "function")
@@ -54,17 +63,60 @@ const binaryTree = (rootElement, compareFn) => {
 		return Math.max(leftHeight, rightHeight);
 	};
 
-	const timeDelay = seconds => {
-		waitTime = millis() + seconds * 1000;
-		while (millis() < waitTime) {}
+	const addNode = (element, node = root) => {
+		const tempPath = pathTraveled;
+		unhighlightNodesFn();
+		pathTraveled = tempPath;
+		TREE.displayTree();
+		if (compareFn(element, node.element) === -1) {
+			if (node.left) {
+				setTimeout(() => {
+					pathTraveled.push(node);
+					addNode(element, node.left);
+				}, speed);
+			} else {
+				setTimeout(() => {
+					pathTraveled.push(node);
+					TREE.displayTree();
+					setTimeout(() => {
+						node.left = createNode(element, "left", node);
+						highlightedNode = node.left;
+						background(BACKGROUND_COLOR);
+						TREE.displayTree();
+					}, speed);
+				}, speed);
+			}
+		} else if (compareFn(element, node.element) === 1) {
+			if (node.right) {
+				setTimeout(() => {
+					pathTraveled.push(node);
+					addNode(element, node.right);
+				}, speed);
+			} else {
+				setTimeout(() => {
+					pathTraveled.push(node);
+					TREE.displayTree();
+
+					setTimeout(() => {
+						node.right = createNode(element, "right", node);
+						highlightedNode = node.right;
+						background(BACKGROUND_COLOR);
+						TREE.displayTree();
+					}, speed);
+				}, speed);
+			}
+		} else {
+			pathTraveled = [];
+			highlightedNode = null;
+			TREE.displayTree();
+		}
 	};
 
-	const addNode = (element, node = root) => {
+	const addNodeNoHighlight = (element, node = root) => {
 		if (compareFn(element, node.element) === -1) {
 			if (node.left) {
 				pathTraveled.push(node);
-				//TREE.displayTree()
-				addNode(element, node.left);
+				addNodeNoHighlight(element, node.left);
 			} else {
 				node.left = createNode(element, "left", node);
 				highlightedNode = node.left;
@@ -73,8 +125,7 @@ const binaryTree = (rootElement, compareFn) => {
 		} else if (compareFn(element, node.element) === 1) {
 			if (node.right) {
 				pathTraveled.push(node);
-				//TREE.displayTree()
-				addNode(element, node.right);
+				addNodeNoHighlight(element, node.right);
 			} else {
 				node.right = createNode(element, "right", node);
 				highlightedNode = node.right;
@@ -83,7 +134,6 @@ const binaryTree = (rootElement, compareFn) => {
 		} else {
 			pathTraveled = [];
 			highlightedNode = null;
-			//TREE.displayTree()
 		}
 	};
 
@@ -130,39 +180,73 @@ const binaryTree = (rootElement, compareFn) => {
 
 	const deleteLeafNode = (node, parent) => {
 		if (!parent) return;
+		REMOVE_NODE = node;
+		TREE.displayTree();
+
 		if (parent.left && parent.left.element === node.element) parent.left = null;
 		else parent.right = null;
+		console.log(parent);
+		REMOVE_NODE = null;
+
+		setTimeout(() => {
+			console.log("leaf node após deletado");
+			background(BACKGROUND_COLOR);
+			TREE.displayTree();
+		}, speed + 100);
 	};
 
 	const deleteNodeWithOneChild = (node, parent) => {
-		const replacerNode = node.left ? node.left : node.right;
+		REMOVE_NODE = node;
 		if (node.left) {
+			REPLACER_NODE_ONE_CHILD = node.left;
+			TREE.displayTree();
 			node.left.level = node.level;
 			node.left.levelPosition = node.levelPosition;
 			node.left.parentPos = node.parentPos;
 		}
 		if (node.right) {
+			REPLACER_NODE_ONE_CHILD = node.right;
+			TREE.displayTree();
 			node.right.level = node.level;
 			node.right.levelPosition = node.levelPosition;
 			node.right.parentPos = node.parentPos;
 		}
-		adjustLevelAndSubLevel(replacerNode);
-		if (!parent) root.element = replacerNode.element;
+
+		adjustLevelAndSubLevel(REPLACER_NODE_ONE_CHILD);
+
+		if (!parent) root.element = REPLACER_NODE_ONE_CHILD.element;
 		else {
-			if (parent.left && parent.left.element === node.element) parent.left = replacerNode;
-			else parent.right = replacerNode;
+			REPLACER_NODE_ONE_CHILD.parent = parent;
+			if (parent.left && parent.left.element === node.element) parent.left = REPLACER_NODE_ONE_CHILD;
+			else parent.right = REPLACER_NODE_ONE_CHILD;
 		}
+		setTimeout(() => {
+			background(BACKGROUND_COLOR);
+			TREE.displayTree();
+			REPLACER_NODE = null;
+		}, speed + 100);
 	};
 
 	const deleteNodeWithTwoChildren = (node, parent) => {
-		const replacer = inOrderReplacer(node);
-		if (!replacer) throw new Error("Node with two children without parent.");
-		deleteNode(replacer.element);
-		if (!parent) root.element = replacer.element;
-		else {
-			if (parent.left === node) parent.left.element = replacer.element;
-			else parent.right.element = replacer.element;
-		}
+		REPLACER_NODE_TWO_CHILDREN = inOrderReplacer(node);
+		REMOVE_NODE = node;
+		if (!REPLACER_NODE_TWO_CHILDREN) throw new Error("Node with two children without parent.");
+		TREE.displayTree();
+		setTimeout(() => {
+			deleteNode(REPLACER_NODE_TWO_CHILDREN.element);
+			if (!parent) {
+				root.element = REPLACER_NODE_TWO_CHILDREN.element;
+				REPLACER_NODE_TWO_CHILDREN = root;
+			} else {
+				if (parent.left === node) {
+					parent.left.element = REPLACER_NODE_TWO_CHILDREN.element;
+					REPLACER_NODE_TWO_CHILDREN = parent.left;
+				} else {
+					parent.right.element = REPLACER_NODE_TWO_CHILDREN.element;
+					REPLACER_NODE_TWO_CHILDREN = parent.right;
+				}
+			}
+		}, speed + 200);
 	};
 
 	const deleteNode = (element, node = root) => {
@@ -211,26 +295,55 @@ const binaryTree = (rootElement, compareFn) => {
 	};
 
 	const searchNode = (value, node = root) => {
-		if (!node) return;
+		if (!node) {
+			alert("Element is not in the tree.");
+			unhighlightNodesFn();
+			return;
+		}
+		searchingNode = node;
+		TREE.displayTree();
 		const comparison = compareFn(value, node.element);
 		if (comparison === 0) {
 			highlightedNode = node;
-			return node;
+			searchingNode = null;
+			setTimeout(() => TREE.displayTree());
+			return;
+		} else if (comparison === -1) {
+			setTimeout(() => {
+				searchNode(value, node.left);
+				console.log(node);
+			}, speed);
+		} else if (comparison === 1) {
+			setTimeout(() => {
+				searchNode(value, node.right);
+				console.log(node);
+			}, speed);
+		} else {
+			pathTraveled = [];
+			searchingNode = null;
+			alert("Element is not in the tree.");
 		}
-		if (comparison === -1 && node.left) {
-			pathTraveled.push(node);
-			return searchNode(value, node.left);
-		}
-		if (comparison === 1 && node) {
-			pathTraveled.push(node);
-			return searchNode(value, node.right);
-		}
-		pathTraveled = [];
-		return false;
 	};
 
-	const traverse = (order = "Inorder", rootNode = root) => mapTree(element => element, rootNode, order);
+	const displayTraverse = array => {
+		if (!array) return;
+		if (array.length === 1) {
+			setTimeout(() => {
+				TRAVERSE_NODE = array[0];
+				TREE.displayTree();
+				TRAVERSE_NODE = null;
+			}, 1000);
+			return;
+		} else {
+			setTimeout(() => {
+				TRAVERSE_NODE = array[0];
+				TREE.displayTree();
+				displayTraverse(array.slice(1));
+			}, 700);
+		}
+	};
 
+	const traverse = (order = "Inorder", rootNode = root) => visit(rootNode, order);
 	levelSort = () => {
 		orderedNodes = visit(root);
 		const sortedNodes = [];
@@ -257,6 +370,7 @@ const binaryTree = (rootElement, compareFn) => {
 	displayTree = () => {
 		setNodesPositions();
 		nodes = visit(root);
+		console.log(nodes);
 		nodes.forEach(node => {
 			if (node.left) {
 				let edgeColor = pathTraveled.includes(node.left) || node.left === highlightedNode ? PATH_COLOR : EDGE_COLOR;
@@ -270,7 +384,19 @@ const binaryTree = (rootElement, compareFn) => {
 				line(node.x, node.y, node.right.x, node.right.y);
 			}
 
-			let nodeColor = pathTraveled.includes(node) ? PATH_COLOR : node === highlightedNode ? HIGHLIGHTED_NODE_COLOR : NODE_COLOR;
+			let nodeColor = pathTraveled.includes(node)
+				? PATH_COLOR
+				: node === searchingNode
+				? "#ff4500"
+				: node === highlightedNode
+				? HIGHLIGHTED_NODE_COLOR
+				: node === REMOVE_NODE
+				? "red"
+				: node === REPLACER_NODE_TWO_CHILDREN || node === REPLACER_NODE_ONE_CHILD
+				? "orange"
+				: node === TRAVERSE_NODE
+				? "#1e90ff"
+				: NODE_COLOR;
 			fill(nodeColor);
 			noStroke();
 			circle(node.x, node.y, NODE_RADIUS);
@@ -302,38 +428,50 @@ const binaryTree = (rootElement, compareFn) => {
 		hasOnlyOneChild,
 		nodeHeight,
 		displayTree,
+		addNodeNoHighlight,
+		displayTraverse,
 	};
 };
 
 function setup() {
-	createCanvas(800, 600);
-	//createCanvas(1400, 700);
+	//createCanvas(800, 600);
+	createCanvas(1400, 800);
 
 	background(BACKGROUND_COLOR);
 
 	inputBox = createInput("");
 	inputBox.position(5, 5);
-	inputBox.size(50);
+	inputBox.size(57);
 
 	addBtn = createButton("Add");
-	addBtn.position(65, 5);
+	addBtn.position(72, 5);
 	addBtn.mousePressed(addNodeBtnFn);
 	delBtn = createButton("Delete");
-	delBtn.position(105, 5);
+	delBtn.position(114, 5);
 	delBtn.mousePressed(deleteNodeBtnFn);
 	searchBtn = createButton("Search");
-	searchBtn.position(160, 5);
+	searchBtn.position(171, 5);
 	searchBtn.mousePressed(searchNodeBtnFn);
 
 	resetBtn = createButton("Reset");
 	resetBtn.position(5, 30);
 	resetBtn.mousePressed(resetTreeBtnFn);
 	unhighlightBtn = createButton("Unhighlight");
-	unhighlightBtn.position(57, 30);
+	unhighlightBtn.position(58, 30);
 	unhighlightBtn.mousePressed(unhighlightNodesFn);
 	randomFillBtn = createButton("Random Fill");
-	randomFillBtn.position(5, 55);
+	randomFillBtn.position(143, 30);
 	randomFillBtn.mousePressed(RandomFillTreeBtnFn);
+
+	traverseBtn = createButton("Inorder Traverse");
+	traverseBtn.position(426, 5);
+	traverseBtn.mousePressed(inorderTraverseBtnFn);
+	traverseBtn = createButton("Preorder Traverse");
+	traverseBtn.position(543, 5);
+	traverseBtn.mousePressed(preorderTraverseBtnFn);
+	traverseBtn = createButton("Postorder Traverse");
+	traverseBtn.position(668, 5);
+	traverseBtn.mousePressed(postorderTraverseBtnFn);
 }
 
 const addNodeBtnFn = () => {
@@ -351,9 +489,12 @@ const deleteNodeBtnFn = () => {
 	if (!TREE) return;
 	pathTraveled = [];
 	highlightedNode = null;
+	REMOVE_NODE = null;
+	REPLACER_NODE_TWO_CHILDREN = null;
+	REPLACER_NODE_ONE_CHILD = null;
 	TREE.removeNode(+inputBox.value());
-	background(BACKGROUND_COLOR);
-	TREE.displayTree();
+	//background(BACKGROUND_COLOR);
+	//TREE.displayTree();
 };
 
 const searchNodeBtnFn = () => {
@@ -361,9 +502,9 @@ const searchNodeBtnFn = () => {
 	if (!TREE) return;
 	else {
 		unhighlightNodesFn();
-		const result = TREE.search(+inputBox.value());
-		if (!result) alert("Element is not in the tree.");
-		else displayTree();
+		TREE.search(+inputBox.value());
+		//if (!highlightedNode) alert("Element is not in the tree.");
+		//TREE.displayTree();
 	}
 };
 
@@ -371,28 +512,59 @@ const resetTreeBtnFn = () => {
 	TREE = null;
 	pathTraveled = [];
 	highlightedNode = null;
+	REMOVE_NODE = null;
+	REPLACER_NODE_TWO_CHILDREN = null;
+	REPLACER_NODE_ONE_CHILD = null;
+	TRAVERSE_NODE = null;
 	background(BACKGROUND_COLOR);
 };
 
 const unhighlightNodesFn = () => {
 	if (!TREE) return;
+	//console.log(pathTraveled, highlightedNode, searchingNode)
 	pathTraveled = [];
 	highlightedNode = null;
+	searchingNode = null;
+	REMOVE_NODE = null;
+	REPLACER_NODE_TWO_CHILDREN = null;
+	REPLACER_NODE_ONE_CHILD = null;
+	TRAVERSE_NODE = null;
 	TREE.displayTree();
 };
 
 const RandomFillTreeBtnFn = () => {
 	TREE = binaryTree(6);
-	TREE.add(2);
-	TREE.add(9);
-	TREE.add(1);
-	TREE.add(4);
-	TREE.add(8);
-	TREE.add(13);
-	TREE.add(18);
+	TREE.addNodeNoHighlight(2);
+	TREE.addNodeNoHighlight(9);
+	TREE.addNodeNoHighlight(1);
+	TREE.addNodeNoHighlight(4);
+	TREE.addNodeNoHighlight(8);
+	TREE.addNodeNoHighlight(13);
+	TREE.addNodeNoHighlight(18);
 	background(BACKGROUND_COLOR);
 	TREE.displayTree();
 	unhighlightNodesFn();
+};
+
+const inorderTraverseBtnFn = () => {
+	unhighlightNodesFn();
+	if (!TREE) return;
+	const inorderNodes = TREE.traverse();
+	TREE.displayTraverse(inorderNodes);
+};
+
+const preorderTraverseBtnFn = () => {
+	unhighlightNodesFn();
+	if (!TREE) return;
+	const inorderNodes = TREE.traverse("Preorder");
+	TREE.displayTraverse(inorderNodes);
+};
+
+const postorderTraverseBtnFn = () => {
+	unhighlightNodesFn();
+	if (!TREE) return;
+	const inorderNodes = TREE.traverse("Postorder");
+	TREE.displayTraverse(inorderNodes);
 };
 
 function draw() {
