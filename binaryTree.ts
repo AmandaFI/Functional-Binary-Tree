@@ -10,8 +10,10 @@
 // using cached inOrderTraverse result ?
 // DECIDE IF ROOT CAN BE DELETED
 // FAZER TESTES DE TUDO
+// incluir generator function ?
 
 // fazer o print da arvoer e depois ir para o p5.js
+// arrumar map, filter e reduce
 
 // https://www.freecodecamp.org/news/binary-search-tree-traversal-inorder-preorder-post-order-for-bst/
 // assertion typescript ? --> console.assertion ou criar própria fn: https://stackoverflow.com/questions/15313418/what-is-assert-in-javascript
@@ -78,14 +80,14 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 			node.right ? addNode(element, node.right) : (node.right = createNode(element, node));
 	};
 
-	const rightMostElement = (node: NodeType<T> = root) => {
+	const rightMostElement = (node: NodeType<T> = root): T => {
 		if (isLeaf(node) || !node.right) return node.element;
-		rightMostElement(node.right);
+		return rightMostElement(node.right);
 	};
 
 	const leftMostElement = (node: NodeType<T> = root) => {
 		if (isLeaf(node) || !node.left) return node.element;
-		leftMostElement(node.left);
+		return leftMostElement(node.left);
 	};
 
 	const ancestralReplacer = (node: NodeType<T>): NodeType<T> | false => {
@@ -113,7 +115,10 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	const deleteNodeWithOneChild = (node: NodeType<T>, parent: NodeType<T> | null) => {
 		const replacerNode = node.left ? node.left : node.right;
 		if (!parent) root.element = replacerNode!.element;
-		else parent.left?.element === node.element ? (parent.left = replacerNode) : (parent.right = replacerNode);
+		else {
+			replacerNode!.parent = parent;
+			parent.left?.element === node.element ? (parent.left = replacerNode) : (parent.right = replacerNode);
+		}
 	};
 
 	const deleteNodeWithTwoChildren = (node: NodeType<T>, parent: NodeType<T> | null) => {
@@ -237,11 +242,9 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return false;
 	};
 
-	const min = (node: NodeType<T> = root): T =>
-		reduce((acc, element) => (compareFn!(element, acc) === -1 ? element : acc), root, node);
+	const min = (node: NodeType<T> = root): T => leftMostElement(node);
 
-	const max = (node: NodeType<T> = root): T =>
-		reduce((acc, element) => (compareFn!(element, acc) === 1 ? element : acc), root, node);
+	const max = (node: NodeType<T> = root): T => rightMostElement(node);
 
 	const traverse = (order: OrderType = "Inorder", rootNode: NodeType<T> = root) => map(element => element, rootNode, order);
 

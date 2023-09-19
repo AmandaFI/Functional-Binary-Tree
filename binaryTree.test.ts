@@ -1,36 +1,36 @@
-// jest for typescript --> https://kulshekhar.github.io/ts-jest/docs/getting-started/installation/#jest-config-file
-// globals --> https://jestjs.io/docs/api
-// expect options --> https://jestjs.io/docs/expect
+// ---------------------------------------------------- Obs ----------------------------------------------------
+// --> Testar comportamento e não implementação. (comportamento pode ser entendido também como API)
+// --> Funções privadas de uma classe ou métodos não expostos de um objeto fazem parte da implementação, portanto não devem ser testados.
 
-// install:
-// npm install --save-dev jest typescript ts-jest @types/jest
-// npx ts-jest config:init
+// ---------------------------------------------------- Binary Tree API ----------------------------------------------------
+// Create tree   -
+// Add element  -
+// Delete element  -
+// Search for element   -
+// Traverse (inorder, preorder, postorder)   -
+// Height   -
+// Max -
+// Min  -
+// Map
+// Filter
+// Reduce
+// Foreach
+// Node count
+// Validate
 
-// run tests -> npx jest
+// ---------------------------------------------------- Tests ----------------------------------------------------
 
 import { binaryTree } from "./binaryTree";
 
-describe("Create node:", () => {
-	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeAll(() => (tree = binaryTree(1)));
-	test("Without parent", () => {
-		expect(tree.createNode(10)).toEqual({ element: 10, left: null, right: null, parent: null });
-	});
-
-	test("With parent", () => {
-		expect(tree.createNode(10, tree.root)).toEqual({
-			element: 10,
-			left: null,
-			right: null,
-			parent: { element: 1, left: null, right: null, parent: null },
-		});
-	});
-});
-
 describe("Create tree:", () => {
+	type Person = {
+		name: string;
+		age: number;
+	};
+
 	test("With object type elements without comparison function.", () => {
 		expect(() => {
-			binaryTree({ name: "Michael", age: 45 });
+			binaryTree<Person>({ name: "Michael", age: 45 });
 		}).toThrow();
 	});
 
@@ -52,71 +52,209 @@ describe("Create tree:", () => {
 // 1  4   8  13
 //    /       \
 //   3         18
-describe("Traverse tree:", () => {
+
+describe("Non-Modifying actions:", () => {
 	let tree: ReturnType<typeof binaryTree<number>>;
 	beforeAll(() => {
 		tree = binaryTree(6);
-		tree.root.left = tree.createNode(2, tree.root);
-		tree.root.left.left = tree.createNode(1, tree.root.left);
-		tree.root.left.right = tree.createNode(4, tree.root.left);
-		tree.root.left.right.left = tree.createNode(3, tree.root.left.right);
-		tree.root.right = tree.createNode(9, tree.root);
-		tree.root.right.left = tree.createNode(8, tree.root.right);
-		tree.root.right.right = tree.createNode(13, tree.root.right);
-		tree.root.right.right.right = tree.createNode(18, tree.root.right.right);
+		tree.add(2);
+		tree.add(1);
+		tree.add(4);
+		tree.add(3);
+		tree.add(9);
+		tree.add(8);
+		tree.add(13);
+		tree.add(18);
 	});
 
-	test("Inorder", () => {
-		expect(tree.traverse("Inorder")).toEqual([1, 2, 3, 4, 6, 8, 9, 13, 18]);
+	describe("Traverse tree:", () => {
+		test("Inorder", () => {
+			expect(tree.traverse("Inorder")).toEqual([1, 2, 3, 4, 6, 8, 9, 13, 18]);
+		});
+
+		test("Preorder", () => {
+			expect(tree.traverse("Preorder")).toEqual([6, 2, 1, 4, 3, 9, 8, 13, 18]);
+		});
+
+		test("Postorder", () => {
+			expect(tree.traverse("Postorder")).toEqual([1, 3, 4, 2, 8, 18, 13, 9, 6]);
+		});
 	});
 
-	test("Preorder", () => {
-		expect(tree.traverse("Preorder")).toEqual([6, 2, 1, 4, 3, 9, 8, 13, 18]);
+	describe("Search:", () => {
+		test("Element that exists as a leaf node.", () => {
+			expect(tree.search(1)).toBe(true);
+		});
+
+		test("Element that exists as a one child node.", () => {
+			expect(tree.search(13)).toBe(true);
+		});
+
+		test("Element that exists as a two children node.", () => {
+			expect(tree.search(9)).toBe(true);
+		});
+
+		test("Element that does not exists in the tree.", () => {
+			expect(tree.search(100)).toBe(false);
+		});
 	});
 
-	test("Postorder", () => {
-		expect(tree.traverse("Postorder")).toEqual([1, 3, 4, 2, 8, 18, 13, 9, 6]);
+	describe("Node hegiht:", () => {
+		test("Leaf.", () => {
+			expect(tree.nodeHeight(tree.root.left!.left!)).toBe(1);
+		});
+
+		test("Root.", () => {
+			expect(tree.nodeHeight(tree.root)).toBe(4);
+		});
+
+		test("Subtree.", () => {
+			expect(tree.nodeHeight(tree.root.right!)).toBe(3);
+		});
+	});
+
+	describe("Minimun element:", () => {
+		test("Leaf node.", () => {
+			expect(tree.min(tree.root.right!.left!)).toBe(8);
+		});
+
+		test("One child node.", () => {
+			expect(tree.min(tree.root.left!.right!)).toBe(3);
+		});
+
+		test("Two child node.", () => {
+			expect(tree.min(tree.root.right!)).toBe(8);
+		});
+
+		test("Tree.", () => {
+			expect(tree.min(tree.root)).toBe(1);
+		});
+	});
+
+	describe("Maximun element:", () => {
+		test("Leaf node.", () => {
+			expect(tree.max(tree.root.right!.left!)).toBe(8);
+		});
+
+		test("One child node.", () => {
+			expect(tree.max(tree.root.left!.right!)).toBe(4);
+		});
+
+		test("Two child node.", () => {
+			expect(tree.max(tree.root.right!)).toBe(18);
+		});
+
+		test("Tree.", () => {
+			expect(tree.max(tree.root)).toBe(18);
+		});
 	});
 });
 
-describe("Add:", () => {
+describe("Modifying actions:", () => {
 	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeAll(() => (tree = binaryTree(10)));
+	beforeAll(() => (tree = binaryTree(6)));
 
-	test("Left child to root.", () => {
-		tree.add(5);
-		expect(tree.root.left?.element).toBe(5);
-		expect(tree.root.left?.parent?.element).toBe(10);
+	describe("Add:", () => {
+		test("Element equal to the root.", () => {
+			tree.add(6);
+			expect(tree.root.left).toBe(null);
+		});
+
+		test("Left child to root.", () => {
+			tree.add(2);
+			expect(tree.root.left?.element).toBe(2);
+			expect(tree.root.left?.parent?.element).toBe(6);
+		});
+
+		test("Left child to left root subtree.", () => {
+			tree.add(1);
+			expect(tree.root.left?.left ? tree.root.left?.left.element : false).toBe(1);
+			expect(tree.root.left?.left ? tree.root.left?.left.parent?.element : false).toBe(2);
+		});
+
+		test("Right child to left root subtree.", () => {
+			tree.add(4);
+			expect(tree.root.left?.right ? tree.root.left?.right.element : false).toBe(4);
+			expect(tree.root.left?.right ? tree.root.left?.right.parent?.element : false).toBe(2);
+		});
+
+		test("Right child to root.", () => {
+			tree.add(9);
+			expect(tree.root.right?.element).toBe(9);
+			expect(tree.root.right?.parent?.element).toBe(6);
+		});
+
+		test("Left child to right root subtree.", () => {
+			tree.add(8);
+			expect(tree.root.right?.left ? tree.root.right?.left.element : false).toBe(8);
+			expect(tree.root.right?.left ? tree.root.right?.left.parent?.element : false).toBe(9);
+		});
+
+		test("Right child to right root subtree.", () => {
+			tree.add(13);
+			expect(tree.root.right?.right ? tree.root.right?.right.element : false).toBe(13);
+			expect(tree.root.right?.right ? tree.root.right?.right.parent?.element : false).toBe(9);
+		});
+
+		test("Element already in the tree.", () => {
+			tree.add(8);
+			expect(tree.traverse()).toEqual([1, 2, 4, 6, 8, 9, 13]);
+		});
 	});
 
-	test("Left child to left root subtree.", () => {
-		tree.add(1);
-		expect(tree.root.left?.left ? tree.root.left?.left.element : false).toBe(1);
-		expect(tree.root.left?.left ? tree.root.left?.left.parent?.element : false).toBe(5);
-	});
+	describe("Delete:", () => {
+		beforeEach(() => {
+			tree.add(3);
+			tree.add(18);
+		});
 
-	test("Right child to left root subtree.", () => {
-		tree.add(7);
-		expect(tree.root.left?.right ? tree.root.left?.right.element : false).toBe(7);
-		expect(tree.root.left?.right ? tree.root.left?.right.parent?.element : false).toBe(5);
-	});
+		test("Leaf node.", () => {
+			tree.remove(3);
+			expect(tree.root.left?.right?.left).toBe(null);
+			expect(tree.traverse()).toEqual([1, 2, 4, 6, 8, 9, 13, 18]);
+		});
 
-	test("Right child to root.", () => {
-		tree.add(15);
-		expect(tree.root.right?.element).toBe(15);
-		expect(tree.root.right?.parent?.element).toBe(10);
-	});
+		test("Node with only one child.", () => {
+			tree.remove(13);
+			expect(tree.root.right?.right?.element).toBe(18);
+			expect(tree.root.right?.right?.parent?.element).toBe(9);
+			expect(tree.traverse()).toEqual([1, 2, 3, 4, 6, 8, 9, 18]);
+		});
 
-	test("Left child to right root subtree.", () => {
-		tree.add(11);
-		expect(tree.root.right?.left ? tree.root.right?.left.element : false).toBe(11);
-		expect(tree.root.right?.left ? tree.root.right?.left.parent?.element : false).toBe(15);
-	});
+		test("Node with two child from root left subtree.", () => {
+			tree.remove(2);
+			expect(tree.root.left?.element).toBe(3);
+			expect(tree.root.left?.parent?.element).toBe(6);
+			expect(tree.traverse()).toEqual([1, 3, 4, 6, 8, 9, 18]);
+		});
 
-	test("Right child to right root subtree.", () => {
-		tree.add(17);
-		expect(tree.root.right?.right ? tree.root.right?.right.element : false).toBe(17);
-		expect(tree.root.right?.right ? tree.root.right?.right.parent?.element : false).toBe(15);
+		test("Node with two child from root right subtree.", () => {
+			tree.remove(9);
+			expect(tree.root.right?.element).toBe(18);
+			expect(tree.root.right?.parent?.element).toBe(6);
+			expect(tree.traverse()).toEqual([1, 3, 4, 6, 8, 18]);
+		});
+
+		test("Root but tree still has other nodes.", () => {
+			tree.remove(6);
+			expect(tree.root.element).toBe(8);
+			expect(tree.root.right?.element).toBe(18);
+			expect(tree.traverse()).toEqual([1, 3, 4, 8, 18]);
+		});
+
+		test("Element that is not in the tree.", () => {
+			expect(tree.remove(100)).toBe(false);
+		});
+
+		test("Root when it is the only tree node remaining.", () => {
+			tree.remove(18);
+			tree.remove(1);
+			tree.remove(4);
+			tree.remove(3);
+			expect(() => {
+				tree.remove(8);
+			}).toThrow();
+		});
 	});
 });
 
@@ -164,149 +302,6 @@ describe("Find replacer for:", () => {
 	test("Greatest tree node.", () => {
 		const replacer = tree.inOrderReplacer(tree.root.right!);
 		expect(replacer ? replacer.element : false).toBe(false);
-	});
-});
-
-describe("Search:", () => {
-	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeAll(() => {
-		tree = binaryTree(10);
-		tree.add(5);
-		tree.add(1);
-		tree.add(7);
-		tree.add(9);
-		tree.add(15);
-		tree.add(12);
-		tree.add(11);
-	});
-
-	test("Element that exists in a leaf node.", () => {
-		expect(tree.search(11)).toBe(true);
-	});
-
-	test("Element that exists in a one child node.", () => {
-		expect(tree.search(7)).toBe(true);
-	});
-
-	test("Element that exists in a two children node.", () => {
-		expect(tree.search(5)).toBe(true);
-	});
-
-	test("Element that does not exists in the tree.", () => {
-		expect(tree.search(100)).toBe(false);
-	});
-});
-
-//      10
-//     /  \
-//    5    15
-//  /\     /
-// 1  7   12
-
-describe("Node type:", () => {
-	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeAll(() => {
-		tree = binaryTree(10);
-		tree.add(5);
-		tree.add(1);
-		tree.add(7);
-		tree.add(15);
-		tree.add(12);
-	});
-
-	test("Is leaf.", () => {
-		expect(tree.isLeaf(tree.root.right!.left!)).toBe(true);
-		expect(tree.isLeaf(tree.root.left!)).toBe(false);
-	});
-
-	test("Has only on child.", () => {
-		expect(tree.hasOnlyOneChild(tree.root.right!)).toBe(true);
-		expect(tree.hasOnlyOneChild(tree.root.right!.left!)).toBe(false);
-	});
-
-	test("Has two children.", () => {
-		expect(tree.hasTwoChildren(tree.root.left!)).toBe(true);
-		expect(tree.hasTwoChildren(tree.root.right!)).toBe(false);
-	});
-});
-
-describe("Node hegiht:", () => {
-	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeAll(() => {
-		tree = binaryTree(10);
-		tree.add(5);
-		tree.add(1);
-		tree.add(7);
-		tree.add(15);
-		tree.add(12);
-	});
-
-	test("Leaf.", () => {
-		expect(tree.nodeHeight(tree.root.right!.left!)).toBe(1);
-	});
-
-	test("Root.", () => {
-		expect(tree.nodeHeight(tree.root)).toBe(3);
-	});
-
-	test("Subtree.", () => {
-		expect(tree.nodeHeight(tree.root.left!)).toBe(2);
-	});
-});
-
-//      10
-//     /  \
-//    5    15
-//  /\     /\
-// 1  7   11  17
-//     \
-//     9
-// -> Testar deletar root quando é o único elemento da árvore
-describe("Delete:", () => {
-	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeEach(() => {
-		tree = binaryTree(10);
-		tree.add(5);
-		tree.add(1);
-		tree.add(7);
-		tree.add(9);
-		tree.add(15);
-		tree.add(11);
-		tree.add(17);
-	});
-
-	test("Leaf node.", () => {
-		tree.remove(11);
-		expect(tree.root.right?.left).toBe(null);
-		expect(tree.traverse()).toEqual([1, 5, 7, 9, 10, 15, 17]);
-	});
-
-	test("Node with only one child.", () => {
-		tree.remove(7);
-		expect(tree.root.left?.right?.element).toBe(9);
-		expect(tree.traverse()).toEqual([1, 5, 9, 10, 11, 15, 17]);
-	});
-
-	test("Node with two child from root left subtree.", () => {
-		tree.remove(5);
-		expect(tree.root.left?.element).toBe(7);
-		expect(tree.traverse()).toEqual([1, 7, 9, 10, 11, 15, 17]);
-	});
-
-	test("Node with two child from root right subtree.", () => {
-		tree.remove(15);
-		expect(tree.root.right?.element).toBe(17);
-		expect(tree.traverse()).toEqual([1, 5, 7, 9, 10, 11, 17]);
-	});
-
-	test("Root but tree still has other nodes.", () => {
-		tree.remove(10);
-		expect(tree.root.element).toBe(11);
-		expect(tree.traverse()).toEqual([1, 5, 7, 9, 11, 15, 17]);
-	});
-
-	test("Element that is not in the tree.", () => {
-		expect(tree.remove(100)).toBe(false);
 	});
 });
 
