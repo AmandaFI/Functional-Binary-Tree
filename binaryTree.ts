@@ -1,19 +1,14 @@
 // print
 // encontrar a maior arvore balanceada 'dentro' da arvore
-// verrficar o que é o node (leaf, um filho, dois filhos)   DONE
-// qunatidade de nos folha de um nó   DONE
-// count de nós  DONE
-// min max DONE
-// verficiar validade da arvore ('todos os nós a esquerda são menores a direita são maiores') DONE
-// sucessor DONE
-// height DONE
-// using cached inOrderTraverse result ?
-// DECIDE IF ROOT CAN BE DELETED
+// using cached inOrderTraverse result
 // FAZER TESTES DE TUDO
-// incluir generator function ?
-
-// fazer o print da arvoer e depois ir para o p5.js
+//  o p5.js
 // arrumar map, filter e reduce
+
+// -----------------------------------------------OBS------------------------------------------------------------------
+// coisas que querem iterar pelos nodes utilizam o visit e os que querem iterar pelos elements utilizam o iterator
+// nada impediria de ter 2 iterators, um que retornasse nodes array e outro que retornasse elements array
+// --------------------------------------------------------------------------------------------------------------------
 
 // https://www.freecodecamp.org/news/binary-search-tree-traversal-inorder-preorder-post-order-for-bst/
 // assertion typescript ? --> console.assertion ou criar própria fn: https://stackoverflow.com/questions/15313418/what-is-assert-in-javascript
@@ -72,20 +67,12 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return true && validate(rootNode.left) && validate(rootNode.right);
 	};
 
-	const addNode = (element: T, node: NodeType<T> = root) => {
-		if (element === node.element) return;
-		if (compareFn!(element, node.element) === -1)
-			node.left ? addNode(element, node.left) : (node.left = createNode(element, node));
-		else if (compareFn!(element, node.element) === 1)
-			node.right ? addNode(element, node.right) : (node.right = createNode(element, node));
-	};
-
 	const rightMostElement = (node: NodeType<T> = root): T => {
 		if (isLeaf(node) || !node.right) return node.element;
 		return rightMostElement(node.right);
 	};
 
-	const leftMostElement = (node: NodeType<T> = root) => {
+	const leftMostElement = (node: NodeType<T> = root): T => {
 		if (isLeaf(node) || !node.left) return node.element;
 		return leftMostElement(node.left);
 	};
@@ -105,6 +92,14 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 			if (!node.parent) return false;
 			return ancestralReplacer(node);
 		}
+	};
+
+	const addNode = (element: T, node: NodeType<T> = root) => {
+		if (element === node.element) return;
+		if (compareFn!(element, node.element) === -1)
+			node.left ? addNode(element, node.left) : (node.left = createNode(element, node));
+		else if (compareFn!(element, node.element) === 1)
+			node.right ? addNode(element, node.right) : (node.right = createNode(element, node));
 	};
 
 	const deleteLeafNode = (element: T, parent: NodeType<T> | null) => {
@@ -145,6 +140,14 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return false;
 	};
 
+	const searchNode = (value: T, node: NodeType<T> = root): NodeType<T> | false => {
+		const comparison = compareFn!(value, node.element);
+		if (comparison === 0) return node;
+		if (comparison === -1 && node.left) return searchNode(value, node.left);
+		if (comparison === 1 && node.right) return searchNode(value, node.right);
+		return false;
+	};
+
 	const visit = (node: NodeType<T> | null = root, order: OrderType = "Inorder"): NodeType<T>[] => {
 		if (!node) return [];
 		const leftChildVisitResult = visit(node.left, order);
@@ -162,47 +165,37 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		}
 	};
 
-	const recursiveMap = ([currentNode, ...rest]: NodeType<T>[], fn: MapFnType<T>, index = 0): ReturnType<typeof fn>[] => {
-		if (!currentNode) return [];
+	const map = (fn: MapFnType<T>, order: OrderType = "Inorder"): ReturnType<typeof fn>[] => {
+		const recursiveMap = ([currentElement, ...rest]: T[], index = 0): ReturnType<typeof fn>[] => {
+			if (!currentElement) return [];
+			return [fn(currentElement, index), ...recursiveMap(rest, index + 1)];
+		};
 
-		return [fn(currentNode.element, index), ...recursiveMap(rest, fn, index + 1)];
+		return recursiveMap([...visitIterator(order)]);
 	};
 
-	const recursiveFilter = ([currentNode, ...rest]: NodeType<T>[], fn: FilterFnType<T>, index = 0): T[] => {
-		if (!currentNode) return [];
-		const fnResult = fn(currentNode.element, index) ? [currentNode.element] : [];
-		return [...fnResult, ...recursiveFilter(rest, fn, index + 1)];
+	const filter = (fn: FilterFnType<T>, order: OrderType = "Inorder"): T[] => {
+		const recursiveFilter = ([currentElement, ...rest]: T[], index = 0): T[] => {
+			if (!currentElement) return [];
+			const fnResult = fn(currentElement, index) ? [currentElement] : [];
+			return [...fnResult, ...recursiveFilter(rest, index + 1)];
+		};
+
+		return recursiveFilter([...visitIterator(order)]);
 	};
 
-	const recursiveReduce = (array: NodeType<T>[], fn: ReduceFnType<T>, acc: any = undefined, index = 0): ReturnType<typeof fn> => {
-		if (array.length === 0) return acc;
-		if (acc === undefined) [acc.element, ...array] = array;
-		return recursiveReduce(array.slice(1), fn, fn(acc, array[0].element, index + 1), index + 1);
+	// testar reduce
+	const reduce = (fn: ReduceFnType<T>, acc: any = undefined, order: OrderType = "Inorder"): ReturnType<typeof fn> => {
+		const recursiveReduce = (array: T[], acc: any = undefined, index = 0): ReturnType<typeof fn> => {
+			if (array.length === 0) return acc;
+			if (acc === undefined) [acc, ...array] = array;
+			return recursiveReduce(array.slice(1), fn(acc, array[0], index + 1), index + 1);
+		};
+		return recursiveReduce([...visitIterator(order)], fn, acc);
 	};
 
-	const map = (mapFn: MapFnType<T>, rootNode: NodeType<T> = root, order: OrderType = "Inorder"): ReturnType<typeof mapFn>[] => {
-		const orderedNodes = visit(rootNode, order);
-		return recursiveMap(orderedNodes, mapFn);
-	};
-
-	const filter = (filterFn: FilterFnType<T>, rootNode: NodeType<T> = root, order: OrderType = "Inorder"): T[] => {
-		const orderedNodes = visit(rootNode, order);
-		return recursiveFilter(orderedNodes, filterFn);
-	};
-
-	const reduce = (
-		fn: ReduceFnType<T>,
-		acc: any = undefined,
-		rootNode: NodeType<T> = root,
-		order: OrderType = "Inorder"
-	): ReturnType<typeof fn> => {
-		const orderedNodes = visit(rootNode, order);
-		return recursiveReduce(orderedNodes, fn, acc);
-	};
-
-	const forEach = (fn: ForEachFnType<T>, rootNode: NodeType<T> = root, order: OrderType = "Inorder"): void => {
-		const orderedNodes = visit(rootNode, order);
-		for (let [index, node] of orderedNodes.entries()) fn(node.element, index);
+	const forEach = (fn: ForEachFnType<T>, order: OrderType = "Inorder"): void => {
+		for (let [index, element] of [...visitIterator()].entries()) fn(element, index);
 	};
 
 	const nodeForEach = (fn: NodeForEachFnType<T>, rootNode: NodeType<T> = root, order: OrderType = "Inorder"): void => {
@@ -212,21 +205,7 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 
 	const nodeCount = (node: NodeType<T> = root, kind?: NodeKindType): number => {
 		if (!kind) return visit(node).length;
-		let kindCheckFn: NodeKindFn<T>;
-		switch (kind) {
-			case "Leaf":
-				kindCheckFn = isLeaf;
-				break;
-			case "OneChild":
-				kindCheckFn = hasOnlyOneChild;
-				break;
-			case "TwoChildren":
-				kindCheckFn = hasTwoChildren;
-				break;
-			default:
-				const _exhaustiveCheck: never = kind;
-				throw new Error("Unknown node kind.");
-		}
+		const kindCheckFn = kind === "Leaf" ? isLeaf : kind === "OneChild" ? hasOnlyOneChild : hasTwoChildren;
 		let count = 0;
 		nodeForEach(node => {
 			if (kindCheckFn(node)) count++;
@@ -234,47 +213,28 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return count;
 	};
 
-	const searchNode = (value: T, node: NodeType<T> = root): NodeType<T> | false => {
-		const comparison = compareFn!(value, node.element);
-		if (comparison === 0) return node;
-		if (comparison === -1 && node.left) return searchNode(value, node.left);
-		if (comparison === 1 && node.right) return searchNode(value, node.right);
-		return false;
-	};
-
-	const min = (node: NodeType<T> = root): T => leftMostElement(node);
-
-	const max = (node: NodeType<T> = root): T => rightMostElement(node);
-
-	const traverse = (order: OrderType = "Inorder", rootNode: NodeType<T> = root) => map(element => element, rootNode, order);
+	// Returns a Iterator, Generator is a specific Iterator
+	// yield* transfere a chamada do next para outro generator, ou seja, o outro generator que deve atender o next e fazer o yield de algo
+	// function* iterator(order: OrderType = "Inorder", node = root): Iterator<T> {
+	function* visitIterator(order: OrderType = "Inorder", node = root): Generator<T, undefined, undefined> {
+		if (order === "Preorder") yield node.element;
+		if (node.left) yield* visitIterator(order, node.left); // cria um novo generator e chama o primeiro next nele.
+		if (order === "Inorder") yield node.element;
+		if (node.right) yield* visitIterator(order, node.right); // cria um novo generator e chama o primeiro next nele.
+		if (order === "Postorder") yield node.element;
+	}
 
 	const add = (element: T) => addNode(element);
 	const remove = (element: T) => deleteNode(element);
 	const search = (element: T) => (searchNode(element) ? true : false);
+	const traverse = (order: OrderType = "Inorder") => [...visitIterator(order)];
 	const height = (rootNode: NodeType<T> = root) => nodeHeight(rootNode);
-
-	function getCol(h: number): number {
-		return 2 ** h - 1;
-	}
-
-	function printTree(M: any, root: NodeType<T> | null, col: number, row: number, height: number): any {
-		if (root === null) {
-			return;
-		}
-		M[row][col] = isLeaf(root)
-			? root.element
-			: hasTwoChildren(root)
-			? `\u2BB6${root.element}\u2BB7`
-			: root.left
-			? `\u2BB6${root.element}`
-			: `${root.element}\u2BB7`;
-		printTree(M, root.left, col - Math.pow(2, height - 2), row + 1, height - 1);
-		printTree(M, root.right, col + Math.pow(2, height - 2), row + 1, height - 1);
-	}
+	const min = (node: NodeType<T> = root): T => leftMostElement(node);
+	const max = (node: NodeType<T> = root): T => rightMostElement(node);
 
 	return {
-		getCol,
-		printTree,
+		// Iterable returns a Iterator
+		[Symbol.iterator]: () => visitIterator(),
 		root,
 		add,
 		traverse,
@@ -286,16 +246,16 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		reduce,
 		min,
 		max,
-		inOrderSuccessor: inOrderReplacer,
+		inOrderReplacer,
 		validate,
 		height,
 		createNode,
-		inOrderReplacer,
 		ancestralReplacer,
 		hasTwoChildren,
 		isLeaf,
 		hasOnlyOneChild,
 		nodeHeight,
+		visitIterator,
 	};
 };
 
@@ -314,24 +274,10 @@ tree.add(12);
 tree.add(11);
 tree.add(17);
 
-// const h = tree.height(tree.root);
-// const col = tree.getCol(h);
-// console.log(`cols: ${col}`);
-// const M = new Array(h).fill(0).map(() => new Array(col).fill(0));
-// tree.printTree(M, tree.root, Math.floor(col / 2), 0, h);
-
-// for (let i = 0; i < M.length; i++) {
-// 	let row = "";
-// 	for (let j = 0; j < M[i].length; j++) {
-// 		if (M[i][j] === 0) {
-// 			row = row + " ";
-// 		} else {
-// 			row = row + M[i][j] + " ";
-// 		}
-// 	}
-// 	console.log(row);
-// }
+let a = tree.visitIterator();
+//console.log([...a]);
+console.log([...tree]);
 
 // // console.log(tree.validate(tree.root.right!));
 // tree.remove(10);
-// console.log(tree.traverse());
+console.log(tree.traverse());

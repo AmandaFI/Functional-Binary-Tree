@@ -53,7 +53,9 @@ describe("Create tree:", () => {
 //    /       \
 //   3         18
 
-describe("Non-Modifying actions:", () => {
+// (6 (2 (1) (4 (3) ()))(9))
+
+describe("Immutable actions:", () => {
 	let tree: ReturnType<typeof binaryTree<number>>;
 	beforeAll(() => {
 		tree = binaryTree(6);
@@ -150,7 +152,7 @@ describe("Non-Modifying actions:", () => {
 	});
 });
 
-describe("Modifying actions:", () => {
+describe("Mutable actions:", () => {
 	let tree: ReturnType<typeof binaryTree<number>>;
 	beforeAll(() => (tree = binaryTree(6)));
 
