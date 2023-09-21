@@ -3,7 +3,8 @@
 // using cached inOrderTraverse result
 // FAZER TESTES DE TUDO
 //  o p5.js
-// arrumar map, filter e reduce
+// arrumar reduce
+// em algum lugar falta ajsutar o levelPosition após uma deleção, testar em displayTreePyramid
 
 // -----------------------------------------------OBS------------------------------------------------------------------
 // coisas que querem iterar pelos nodes utilizam o visit e os que querem iterar pelos elements utilizam o iterator
@@ -11,21 +12,27 @@
 // --------------------------------------------------------------------------------------------------------------------
 
 // https://www.freecodecamp.org/news/binary-search-tree-traversal-inorder-preorder-post-order-for-bst/
-// assertion typescript ? --> console.assertion ou criar própria fn: https://stackoverflow.com/questions/15313418/what-is-assert-in-javascript
 
 type NodeType<T extends {}> = {
 	element: T;
 	left: NodeType<T> | null;
 	right: NodeType<T> | null;
 	parent: NodeType<T> | null;
+	level: number; // depth
+	levelPosition: number;
+	parentSide: ChildSideType | null;
 };
 
 type CompareFnReturnType = -1 | 0 | 1;
 type CompareFnType<T extends {}> = (leftElement: T, rightElement: T) => CompareFnReturnType;
 
+type ChildSideType = "left" | "right";
 type OrderType = "Inorder" | "Preorder" | "Postorder";
 type NodeKindType = "Leaf" | "OneChild" | "TwoChildren";
 type NodeKindFn<T extends {}> = (node: NodeType<T>) => boolean;
+type sortedNodesType<T extends {}> = {
+	[level: string]: NodeType<T>[];
+};
 
 type MapFnType<T> = (element: T, index?: number) => any;
 type FilterFnType<T> = (element: T, index?: number) => boolean;
@@ -38,8 +45,10 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	if ((typeof rootElement === "object" && !compareFn) || typeof rootElement === "function")
 		throw new Error("Unable to sort tree.");
 
-	const createNode = (element: T, parent: NodeType<T> | null = null): NodeType<T> => {
-		return { element, left: null, right: null, parent };
+	const createNode = (element: T, parent: NodeType<T> | null = null, parentSide: ChildSideType | null = null): NodeType<T> => {
+		const level = parent ? parent.level + 1 : 0;
+		const levelPosition = !parent ? 1 : parentSide === "left" ? 2 * parent.levelPosition - 1 : 2 * parent.levelPosition;
+		return { element, left: null, right: null, parent, level, levelPosition, parentSide };
 	};
 
 	compareFn ??= (firstValue, secondValue) => (firstValue === secondValue ? 0 : firstValue > secondValue ? 1 : -1);
@@ -94,12 +103,26 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		}
 	};
 
+	const recalcLevel = (node: NodeType<T>) => {
+		if (!node) return;
+		if (node.left) {
+			node.left.level = node.level + 1;
+			node.left.levelPosition = 2 * node.levelPosition - 1;
+			recalcLevel(node.left);
+		}
+		if (node.right) {
+			node.right.level = node.level + 1;
+			node.right.levelPosition = 2 * node.levelPosition;
+			recalcLevel(node.right);
+		}
+	};
+
 	const addNode = (element: T, node: NodeType<T> = root) => {
 		if (element === node.element) return;
 		if (compareFn!(element, node.element) === -1)
-			node.left ? addNode(element, node.left) : (node.left = createNode(element, node));
+			node.left ? addNode(element, node.left) : (node.left = createNode(element, node, "left"));
 		else if (compareFn!(element, node.element) === 1)
-			node.right ? addNode(element, node.right) : (node.right = createNode(element, node));
+			node.right ? addNode(element, node.right) : (node.right = createNode(element, node, "right"));
 	};
 
 	const deleteLeafNode = (element: T, parent: NodeType<T> | null) => {
@@ -109,6 +132,10 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 
 	const deleteNodeWithOneChild = (node: NodeType<T>, parent: NodeType<T> | null) => {
 		const replacerNode = node.left ? node.left : node.right;
+
+		replacerNode!.level = node.level;
+		recalcLevel(replacerNode!);
+
 		if (!parent) root.element = replacerNode!.element;
 		else {
 			replacerNode!.parent = parent;
@@ -165,6 +192,17 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		}
 	};
 
+	// Returns a Iterator, Generator is a specific Iterator
+	// yield* transfere a chamada do next para outro generator, ou seja, o outro generator que deve atender o next e fazer o yield de algo
+	// function* iterator(order: OrderType = "Inorder", node = root): Iterator<T> {
+	function* visitIterator(order: OrderType = "Inorder", node = root): Generator<T, undefined, undefined> {
+		if (order === "Preorder") yield node.element;
+		if (node.left) yield* visitIterator(order, node.left); // cria um novo generator e chama o primeiro next nele.
+		if (order === "Inorder") yield node.element;
+		if (node.right) yield* visitIterator(order, node.right); // cria um novo generator e chama o primeiro next nele.
+		if (order === "Postorder") yield node.element;
+	}
+
 	const map = (fn: MapFnType<T>, order: OrderType = "Inorder"): ReturnType<typeof fn>[] => {
 		const recursiveMap = ([currentElement, ...rest]: T[], index = 0): ReturnType<typeof fn>[] => {
 			if (!currentElement) return [];
@@ -194,7 +232,7 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return recursiveReduce([...visitIterator(order)], fn, acc);
 	};
 
-	const forEach = (fn: ForEachFnType<T>, order: OrderType = "Inorder"): void => {
+	const forEach = (fn: ForEachFnType<T>): void => {
 		for (let [index, element] of [...visitIterator()].entries()) fn(element, index);
 	};
 
@@ -213,16 +251,65 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return count;
 	};
 
-	// Returns a Iterator, Generator is a specific Iterator
-	// yield* transfere a chamada do next para outro generator, ou seja, o outro generator que deve atender o next e fazer o yield de algo
-	// function* iterator(order: OrderType = "Inorder", node = root): Iterator<T> {
-	function* visitIterator(order: OrderType = "Inorder", node = root): Generator<T, undefined, undefined> {
-		if (order === "Preorder") yield node.element;
-		if (node.left) yield* visitIterator(order, node.left); // cria um novo generator e chama o primeiro next nele.
-		if (order === "Inorder") yield node.element;
-		if (node.right) yield* visitIterator(order, node.right); // cria um novo generator e chama o primeiro next nele.
-		if (order === "Postorder") yield node.element;
-	}
+	const sortNodesByLevel = () => {
+		const orderedNodes = visit();
+
+		const sortedNodes: sortedNodesType<T> = {};
+		orderedNodes.forEach(node => {
+			if (node.level.toString() in sortedNodes) sortedNodes[node.level.toString()].push(node);
+			else sortedNodes[node.level.toString()] = [node];
+		});
+
+		return sortedNodes;
+	};
+
+	// ( 6 ( 2 ( 1 ) ( 4 ( 3 ) ) ) ( 9 ( 8 ) ( 13 ( 18 ) ) ) )
+	const displayTreeInline = (node: NodeType<T> | null = root, tree: string = "") => {
+		if (!node) return tree;
+		tree += " ( " + node.element + displayTreeInline(node.left, tree) + displayTreeInline(node.right, tree) + " )";
+		return tree;
+	};
+
+	// 	[ (6) ]
+	//  [ (2) (9) ]
+	//  [ (1) (4) | (8) (13) ]
+	//  [ () () | (3) () | () () | () (18) ]
+	const displayTreePyramid = () => {
+		const levelSortedNodes = sortNodesByLevel();
+		const levels = Object.keys(levelSortedNodes);
+		let matrix: T[][] | null[][] = [];
+		[...Array(levels.length)].forEach((el, index) => {
+			matrix[index] = [...Array(2 ** index)].map(() => null);
+		});
+
+		Object.keys(levelSortedNodes).forEach(level => {
+			levelSortedNodes[level].forEach((node: NodeType<T>) => {
+				matrix[+level][node.levelPosition - 1] = node.element;
+			});
+		});
+
+		matrix.forEach((row: T[] | null[]) => {
+			let printRow = "[ ";
+			row.forEach((col: T | null, index) => {
+				if (!col) printRow += index % 2 !== 0 && index !== row.length - 1 ? "- | " : "- ";
+				else printRow += index % 2 !== 0 && index !== row.length - 1 ? "(" + col + ") | " : "(" + col + ") ";
+			});
+			console.log(printRow + "]");
+		});
+	};
+
+	const lowestCommonAncestor = (element1: T, element2: T, node: NodeType<T> | null = root) => {
+		if (!node || !searchNode(element1) || !searchNode(element2)) return null;
+		if (element1 === node.element || element2 === node.element) return node;
+
+		const checkLeftTree = lowestCommonAncestor(element1, element2, node.left);
+		const checkRightTree = lowestCommonAncestor(element1, element2, node.right);
+
+		if (checkLeftTree && checkRightTree) return node; // estão em subtrees separadas
+		else if (checkLeftTree) return node.left; // ambos estão na left tree e um é ancestral do outro
+		else if (checkRightTree) return node.right; // ambos estão na right tree e um é ancestral do outro
+		return null;
+	};
 
 	const add = (element: T) => addNode(element);
 	const remove = (element: T) => deleteNode(element);
@@ -256,28 +343,48 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		hasOnlyOneChild,
 		nodeHeight,
 		visitIterator,
+		displayTreeInline,
+		displayTreePyramid,
+		lowestCommonAncestor,
 	};
 };
 
 export { binaryTree };
 
-const tree = binaryTree(10);
-tree.add(5);
+//      6
+//     /  \
+//    2    9
+//  /\     /\
+// 1  4   8  13
+//    /       \
+//   3         18
+
+const tree = binaryTree(6);
+tree.add(2);
 tree.add(1);
-tree.add(7);
-tree.add(6);
-tree.add(8);
+tree.add(4);
+tree.add(3);
 tree.add(9);
-tree.add(15);
+tree.add(8);
 tree.add(13);
-tree.add(12);
-tree.add(11);
-tree.add(17);
+tree.add(18);
 
-let a = tree.visitIterator();
-//console.log([...a]);
-console.log([...tree]);
+let a = tree.lowestCommonAncestor(1, 23);
+console.log(a ? a.element : "no");
+// console.log(tree.lowestCommonAncestor(4, 6));
+// console.log(tree.lowestCommonAncestor(3, 4));
+// console.log(tree.lowestCommonAncestor(2, 4));
 
-// // console.log(tree.validate(tree.root.right!));
-// tree.remove(10);
+// tree.displayTreePyramid();
+
+// tree.remove(2);
+// tree.displayTreePyramid();
+// tree.displayTreeInline();
+
+// let a = tree.visitIterator();
+// //console.log([...a]);
+// console.log([...tree]);
+
+// // // console.log(tree.validate(tree.root.right!));
+// // tree.remove(10);
 console.log(tree.traverse());

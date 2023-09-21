@@ -9,6 +9,7 @@
 // Search for element   -
 // Traverse (inorder, preorder, postorder)   -
 // Height   -
+// Depth -
 // Max -
 // Min  -
 // Map
@@ -41,7 +42,7 @@ describe("Create tree:", () => {
 	});
 
 	test("Normally", () => {
-		expect(binaryTree(10).root).toEqual({ element: 10, left: null, right: null, parent: null });
+		expect(binaryTree(10).root).toEqual({ element: 10, left: null, right: null, parent: null, depth: 0 });
 	});
 });
 
@@ -112,6 +113,20 @@ describe("Immutable actions:", () => {
 
 		test("Subtree.", () => {
 			expect(tree.nodeHeight(tree.root.right!)).toBe(3);
+		});
+	});
+
+	describe("Node depth:", () => {
+		test("Leaf.", () => {
+			expect(tree.root.left!.left!.level).toBe(2);
+		});
+
+		test("Root.", () => {
+			expect(tree.root.level).toBe(0);
+		});
+
+		test("Subtree.", () => {
+			expect(tree.root.right!.level).toBe(1);
 		});
 	});
 
@@ -220,6 +235,7 @@ describe("Mutable actions:", () => {
 			tree.remove(13);
 			expect(tree.root.right?.right?.element).toBe(18);
 			expect(tree.root.right?.right?.parent?.element).toBe(9);
+			expect(tree.root.right?.right?.depth!).toBe(2);
 			expect(tree.traverse()).toEqual([1, 2, 3, 4, 6, 8, 9, 18]);
 		});
 
