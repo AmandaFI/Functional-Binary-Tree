@@ -42,7 +42,15 @@ describe("Create tree:", () => {
 	});
 
 	test("Normally", () => {
-		expect(binaryTree(10).root).toEqual({ element: 10, left: null, right: null, parent: null, depth: 0 });
+		expect(binaryTree(10).root).toEqual({
+			element: 10,
+			left: null,
+			right: null,
+			parent: null,
+			level: 0,
+			levelPosition: 1,
+			parentSide: null,
+		});
 	});
 });
 
@@ -128,6 +136,27 @@ describe("Immutable actions:", () => {
 		test("Subtree.", () => {
 			expect(tree.root.right!.level).toBe(1);
 		});
+	});
+
+	describe("Lowest common ancestor between 2 nodes:", () => {
+		test("One is parent of the other.", () => {
+			const acestor = tree.lowestCommonAncestor(4, 3);
+			expect(acestor ? acestor.element : false).toBe(4);
+		});
+
+		test("Both in the same subtree.", () => {
+			const acestor = tree.lowestCommonAncestor(2, 3);
+			expect(acestor ? acestor.element : false).toBe(2);
+		});
+
+		test("Elements in different subtrees.", () => {
+			const acestor = tree.lowestCommonAncestor(8, 13);
+			expect(acestor ? acestor.element : false).toBe(9);
+		});
+
+		// test("Node not in tree.", () => {
+		// 	expect(tree.root.right!.level).toBe(1);
+		// });
 	});
 
 	describe("Minimun element:", () => {
@@ -235,7 +264,7 @@ describe("Mutable actions:", () => {
 			tree.remove(13);
 			expect(tree.root.right?.right?.element).toBe(18);
 			expect(tree.root.right?.right?.parent?.element).toBe(9);
-			expect(tree.root.right?.right?.depth!).toBe(2);
+			expect(tree.root.right?.right?.level!).toBe(2);
 			expect(tree.traverse()).toEqual([1, 2, 3, 4, 6, 8, 9, 18]);
 		});
 

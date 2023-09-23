@@ -76,15 +76,11 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		return true && validate(rootNode.left) && validate(rootNode.right);
 	};
 
-	const rightMostElement = (node: NodeType<T> = root): T => {
-		if (isLeaf(node) || !node.right) return node.element;
-		return rightMostElement(node.right);
-	};
+	const rightMostElement = (node: NodeType<T> = root): T =>
+		isLeaf(node) || !node.right ? node.element : rightMostElement(node.right);
 
-	const leftMostElement = (node: NodeType<T> = root): T => {
-		if (isLeaf(node) || !node.left) return node.element;
-		return leftMostElement(node.left);
-	};
+	const leftMostElement = (node: NodeType<T> = root): T =>
+		isLeaf(node) || !node.left ? node.element : leftMostElement(node.left);
 
 	const ancestralReplacer = (node: NodeType<T>): NodeType<T> | false => {
 		if (node.parent && node.parent.left === node) return node.parent;
@@ -152,11 +148,10 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	};
 
 	const deleteNode = (element: T, node: NodeType<T> | null = root): boolean => {
-		if (element === root.element && isLeaf(root)) throw new Error("Root deletion not allowed.");
 		if (!node) return false;
+		if (element === root.element && isLeaf(root)) throw new Error("Root deletion not allowed.");
 
 		if (node.element === element) {
-			if (!node.parent && node !== root) throw new Error(`Can not delete node with no parent.`);
 			if (isLeaf(node)) deleteLeafNode(element, node.parent);
 			else if (hasTwoChildren(node)) deleteNodeWithTwoChildren(node, node.parent);
 			else deleteNodeWithOneChild(node, node.parent);
@@ -298,17 +293,19 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		});
 	};
 
-	const lowestCommonAncestor = (element1: T, element2: T, node: NodeType<T> | null = root) => {
-		if (!node || !searchNode(element1) || !searchNode(element2)) return null;
-		if (element1 === node.element || element2 === node.element) return node;
+	const lowestCommonAncestor = (firstElement: T, secondElement: T, node: NodeType<T> | null = root): NodeType<T> | false => {
+		// if (!node || !searchNode(firstElement) || !searchNode(secondElement)) return false;    // considering that the elements may not be in the tree
 
-		const checkLeftTree = lowestCommonAncestor(element1, element2, node.left);
-		const checkRightTree = lowestCommonAncestor(element1, element2, node.right);
+		if (!node) return false;
 
-		if (checkLeftTree && checkRightTree) return node; // estão em subtrees separadas
-		else if (checkLeftTree) return node.left; // ambos estão na left tree e um é ancestral do outro
-		else if (checkRightTree) return node.right; // ambos estão na right tree e um é ancestral do outro
-		return null;
+		const firstCmp = compareFn!(firstElement, node.element);
+		const secondCmp = compareFn!(secondElement, node.element);
+
+		if (firstCmp === 0 || secondCmp === 0) return node;
+		else if (firstCmp === -1 && secondCmp === -1) return lowestCommonAncestor(firstElement, secondElement, node.left);
+		else if (firstCmp === 1 && secondCmp === 1) return lowestCommonAncestor(firstElement, secondElement, node.right);
+		else if ((firstCmp === 1 && secondCmp === -1) || (firstCmp === -1 && secondCmp === 1)) return node;
+		else return false;
 	};
 
 	const add = (element: T) => addNode(element);
@@ -369,11 +366,13 @@ tree.add(8);
 tree.add(13);
 tree.add(18);
 
-let a = tree.lowestCommonAncestor(1, 23);
+// let a = tree.lowestCommonAncestor(1, 23);
+// const a = tree.lowestCommonAncestor(4, 6);
+// const a = tree.lowestCommonAncestor(3, 4);
+// const a = tree.lowestCommonAncestor(2, 4);
+const a = tree.lowestCommonAncestor(3, 189);
+
 console.log(a ? a.element : "no");
-// console.log(tree.lowestCommonAncestor(4, 6));
-// console.log(tree.lowestCommonAncestor(3, 4));
-// console.log(tree.lowestCommonAncestor(2, 4));
 
 // tree.displayTreePyramid();
 
