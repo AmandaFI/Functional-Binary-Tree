@@ -12,8 +12,9 @@
 // Depth -
 // Max -
 // Min  -
-// Map
-// Filter
+// Lowest common ancestor -
+// Map -
+// Filter -
 // Reduce
 // Foreach
 // Node count
@@ -21,7 +22,8 @@
 
 // ---------------------------------------------------- Tests ----------------------------------------------------
 
-import { binaryTree } from "./binaryTree";
+// import { binaryTree } from "./binaryTree";
+import { binaryTree } from "./bTree2";
 
 describe("Create tree:", () => {
 	type Person = {
@@ -112,15 +114,15 @@ describe("Immutable actions:", () => {
 
 	describe("Node hegiht:", () => {
 		test("Leaf.", () => {
-			expect(tree.nodeHeight(tree.root.left!.left!)).toBe(1);
+			expect(tree.height(tree.root.left!.left!)).toBe(1);
 		});
 
 		test("Root.", () => {
-			expect(tree.nodeHeight(tree.root)).toBe(4);
+			expect(tree.height(tree.root)).toBe(4);
 		});
 
 		test("Subtree.", () => {
-			expect(tree.nodeHeight(tree.root.right!)).toBe(3);
+			expect(tree.height(tree.root.right!)).toBe(3);
 		});
 	});
 
@@ -192,6 +194,42 @@ describe("Immutable actions:", () => {
 
 		test("Tree.", () => {
 			expect(tree.max(tree.root)).toBe(18);
+		});
+	});
+
+	describe("Map:", () => {
+		test("Function without index default order.", () => {
+			expect(tree.map(el => el ** 2)).toEqual([1, 4, 9, 16, 36, 64, 81, 169, 324]);
+		});
+
+		test("Function with index deafult order.", () => {
+			expect(tree.map((el, index) => el + index!)).toEqual([1, 3, 5, 7, 10, 13, 15, 20, 26]);
+		});
+
+		test("Function without index specific order.", () => {
+			expect(tree.map(el => el ** 2, "Preorder")).toEqual([36, 4, 1, 16, 9, 81, 64, 169, 324]);
+		});
+
+		test("Function with index specific order.", () => {
+			expect(tree.map((el, index) => el + index!, "Preorder")).toEqual([6, 3, 3, 7, 7, 14, 14, 20, 26]);
+		});
+	});
+
+	describe("Filter:", () => {
+		test("Function without index default order.", () => {
+			expect(tree.filter(el => el % 2 === 0)).toEqual([2, 4, 6, 8, 18]);
+		});
+
+		test("Function with index deafult order.", () => {
+			expect(tree.filter((el, index) => el + index! > 6)).toEqual([4, 6, 8, 9, 13, 18]);
+		});
+
+		test("Function without index specific order.", () => {
+			expect(tree.filter(el => el % 2 === 0, "Preorder")).toEqual([6, 2, 4, 8, 18]);
+		});
+
+		test("Function with index specific order.", () => {
+			expect(tree.filter((el, index) => el + index! > 6, "Preorder")).toEqual([4, 3, 9, 8, 13, 18]);
 		});
 	});
 });
@@ -302,53 +340,6 @@ describe("Mutable actions:", () => {
 				tree.remove(8);
 			}).toThrow();
 		});
-	});
-});
-
-//      10
-//     /  \
-//    5    15
-//  /\     /
-// 1  7   12
-//     \  /
-//     9  11
-
-describe("Find replacer for:", () => {
-	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeAll(() => {
-		tree = binaryTree(10);
-		tree.add(5);
-		tree.add(1);
-		tree.add(7);
-		tree.add(9);
-		tree.add(15);
-		tree.add(12);
-		tree.add(11);
-	});
-
-	test("Root.", () => {
-		const replacer = tree.inOrderReplacer(tree.root);
-		expect(replacer ? replacer.element : false).toBe(11);
-	});
-
-	test("Node with right subtree only.", () => {
-		const replacer = tree.inOrderReplacer(tree.root.left!.right!);
-		expect(replacer ? replacer.element : false).toBe(9);
-	});
-
-	test("Node with left subtree only.", () => {
-		const replacer = tree.inOrderReplacer(tree.root.right!.left!);
-		expect(replacer ? replacer.element : false).toBe(15);
-	});
-
-	test("Node with left and right subtrees.", () => {
-		const replacer = tree.inOrderReplacer(tree.root.left!);
-		expect(replacer ? replacer.element : false).toBe(7);
-	});
-
-	test("Greatest tree node.", () => {
-		const replacer = tree.inOrderReplacer(tree.root.right!);
-		expect(replacer ? replacer.element : false).toBe(false);
 	});
 });
 
