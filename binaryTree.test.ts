@@ -22,8 +22,7 @@
 
 // ---------------------------------------------------- Tests ----------------------------------------------------
 
-// import { binaryTree } from "./binaryTree";
-import { binaryTree } from "./bTree2";
+import { binarySearchTree } from "./binarySearchTree";
 
 describe("Create tree:", () => {
 	type Person = {
@@ -33,18 +32,18 @@ describe("Create tree:", () => {
 
 	test("With object type elements without comparison function.", () => {
 		expect(() => {
-			binaryTree<Person>({ name: "Michael", age: 45 });
+			binarySearchTree<Person>({ name: "Michael", age: 45 });
 		}).toThrow();
 	});
 
 	test("With function type element.", () => {
 		expect(() => {
-			binaryTree(() => 1);
+			binarySearchTree(() => 1);
 		}).toThrow();
 	});
 
 	test("Normally", () => {
-		expect(binaryTree(10).root).toEqual({
+		expect(binarySearchTree(10).root).toEqual({
 			element: 10,
 			left: null,
 			right: null,
@@ -67,9 +66,9 @@ describe("Create tree:", () => {
 // (6 (2 (1) (4 (3) ()))(9))
 
 describe("Immutable actions:", () => {
-	let tree: ReturnType<typeof binaryTree<number>>;
+	let tree: ReturnType<typeof binarySearchTree<number>>;
 	beforeAll(() => {
-		tree = binaryTree(6);
+		tree = binarySearchTree(6);
 		tree.add(2);
 		tree.add(1);
 		tree.add(4);
@@ -235,8 +234,8 @@ describe("Immutable actions:", () => {
 });
 
 describe("Mutable actions:", () => {
-	let tree: ReturnType<typeof binaryTree<number>>;
-	beforeAll(() => (tree = binaryTree(6)));
+	let tree: ReturnType<typeof binarySearchTree<number>>;
+	beforeAll(() => (tree = binarySearchTree(6)));
 
 	describe("Add:", () => {
 		test("Element equal to the root.", () => {
