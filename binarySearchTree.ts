@@ -22,6 +22,7 @@
 type ChildSideType = "left" | "right";
 type OrderType = "Inorder" | "Preorder" | "Postorder";
 type NodeKindType = "Leaf" | "OneChild" | "BothChildren";
+type RotationType = "LL" | "RR" | "LR" | "RL";
 
 type NodeType<T extends {}> = {
 	element: T;
@@ -126,7 +127,7 @@ const binaryTreeIterationMethods = <T extends {}>(root: NodeType<T>) => {
 	};
 };
 
-const basicBinaryTreeOperations = <T extends {}>(root: NodeType<T>, compareFn?: CompareFnType<T>) => {
+const binaryTreePrimitiveMethods = <T extends {}>(root: NodeType<T>, compareFn?: CompareFnType<T>) => {
 	compareFn ??= (firstValue, secondValue) => (firstValue === secondValue ? 0 : firstValue > secondValue ? 1 : -1);
 
 	const iterationMethods = binaryTreeIterationMethods(root);
@@ -271,7 +272,7 @@ const basicBinaryTreeOperations = <T extends {}>(root: NodeType<T>, compareFn?: 
 };
 
 // {} allows all types except undefined and null
-const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => {
+const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => {
 	if ((typeof rootElement === "object" && !compareFn) || typeof rootElement === "function")
 		throw new Error("Unable to sort tree.");
 
@@ -282,13 +283,13 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	};
 
 	const root: NodeType<T> = createNode(rootElement);
-	const operations = basicBinaryTreeOperations(root, compareFn);
+	const primitives = binaryTreePrimitiveMethods(root, compareFn);
 
 	const addNode = (element: T, node: NodeType<T> = root) => {
 		if (element === node.element) return;
-		if (operations.compareFn!(element, node.element) === -1)
+		if (primitives.compareFn!(element, node.element) === -1)
 			node.left ? addNode(element, node.left) : (node.left = createNode(element, node, "left"));
-		else if (operations.compareFn!(element, node.element) === 1)
+		else if (primitives.compareFn!(element, node.element) === 1)
 			node.right ? addNode(element, node.right) : (node.right = createNode(element, node, "right"));
 	};
 
@@ -300,7 +301,7 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	const deleteNodeWithOnlyChild = (node: NodeType<T>, parent: NodeType<T> | null) => {
 		const replacerNode = node.left ? node.left : node.right;
 
-		operations.updateSubtreeLevels(replacerNode!, node.level, node.levelPosition);
+		primitives.updateSubtreeLevels(replacerNode!, node.level, node.levelPosition);
 
 		if (!parent) root.element = replacerNode!.element;
 		else {
@@ -310,7 +311,7 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	};
 
 	const deleteNodeWithBothChildren = (node: NodeType<T>, parent: NodeType<T> | null) => {
-		const replacer = node.right ? operations.inorderSucessor(node) : operations.inorderPredecessor(node);
+		const replacer = node.right ? primitives.inorderSucessor(node) : primitives.inorderPredecessor(node);
 		if (!replacer) throw new Error("Node with two children without parent.");
 		deleteNode(replacer.element);
 		if (!parent) root.element = replacer.element;
@@ -319,21 +320,21 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 
 	const deleteNode = (element: T, node: NodeType<T> | null = root): boolean => {
 		if (!node) return false;
-		if (element === root.element && operations.isLeaf(root)) throw new Error("Root deletion not allowed.");
+		if (element === root.element && primitives.isLeaf(root)) throw new Error("Root deletion not allowed.");
 
 		if (node.element === element) {
-			if (operations.isLeaf(node)) deleteLeafNode(element, node.parent);
-			else if (operations.hasBothChildren(node)) deleteNodeWithBothChildren(node, node.parent);
+			if (primitives.isLeaf(node)) deleteLeafNode(element, node.parent);
+			else if (primitives.hasBothChildren(node)) deleteNodeWithBothChildren(node, node.parent);
 			else deleteNodeWithOnlyChild(node, node.parent);
 			return true;
 		}
-		if (operations.compareFn!(element, node.element) === -1) return deleteNode(element, node.left);
-		else if (operations.compareFn!(element, node.element) === 1) return deleteNode(element, node.right);
+		if (primitives.compareFn!(element, node.element) === -1) return deleteNode(element, node.left);
+		else if (primitives.compareFn!(element, node.element) === 1) return deleteNode(element, node.right);
 		return false;
 	};
 
 	const searchNode = (value: T, node: NodeType<T> = root): NodeType<T> | false => {
-		const comparison = operations.compareFn!(value, node.element);
+		const comparison = primitives.compareFn!(value, node.element);
 		if (comparison === 0) return node;
 		if (comparison === -1 && node.left) return searchNode(value, node.left);
 		if (comparison === 1 && node.right) return searchNode(value, node.right);
@@ -343,9 +344,9 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 	const add = (element: T) => addNode(element);
 	const remove = (element: T) => deleteNode(element);
 	const search = (element: T) => (searchNode(element) ? true : false);
-	const height = (rootNode: NodeType<T> = root) => operations.height(rootNode);
-	const min = (node: NodeType<T> = root): T => operations.leftMostElement(node);
-	const max = (node: NodeType<T> = root): T => operations.rightMostElement(node);
+	const height = (rootNode: NodeType<T> = root) => primitives.height(rootNode);
+	const min = (node: NodeType<T> = root): T => primitives.leftMostElement(node);
+	const max = (node: NodeType<T> = root): T => primitives.rightMostElement(node);
 
 	return {
 		root,
@@ -355,19 +356,85 @@ const binaryTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) 
 		min,
 		max,
 		height,
-		display: operations.displayTreeInline,
-		traverse: operations.traverse,
-		[Symbol.iterator]: () => operations[Symbol.iterator], // Iterable returns a Iterator
-		map: operations.map,
-		filter: operations.filter,
-		reduce: operations.reduce,
-		forEach: operations.forEachElement,
-		lowestCommonAncestor: operations.lowestCommonAncestor,
-		pyramid: operations.displayTreePyramid,
+		display: primitives.displayTreeInline,
+		traverse: primitives.traverse,
+		[Symbol.iterator]: () => primitives[Symbol.iterator], // Iterable returns a Iterator
+		map: primitives.map,
+		filter: primitives.filter,
+		reduce: primitives.reduce,
+		forEach: primitives.forEachElement,
+		lowestCommonAncestor: primitives.lowestCommonAncestor,
+		pyramid: primitives.displayTreePyramid,
 	};
 };
 
-export { binaryTree };
+const AVLTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => {
+	if ((typeof rootElement === "object" && !compareFn) || typeof rootElement === "function")
+		throw new Error("Unable to sort tree.");
+
+	const createNode = (element: T, parent: NodeType<T> | null = null, parentSide: ChildSideType | null = null): NodeType<T> => {
+		const level = parent ? parent.level + 1 : 0;
+		const levelPosition = !parent ? 1 : parentSide === "left" ? 2 * parent.levelPosition - 1 : 2 * parent.levelPosition;
+		return { element, left: null, right: null, parent, level, levelPosition, parentSide };
+	};
+
+	const root: NodeType<T> = createNode(rootElement);
+	const primitives = binaryTreePrimitiveMethods(root, compareFn);
+
+	const calculateBalanceFactor = (node: NodeType<T> | null) => {
+		if (!node) return 0;
+		return primitives.height(node.right) - primitives.height(node.left);
+	};
+
+	const isBalanced = (node: NodeType<T> | null) => {
+		const balanceFactor = calculateBalanceFactor(node);
+		if (balanceFactor === -1 || balanceFactor === 0 || balanceFactor === 1) return true;
+		return false;
+	};
+
+	const choseRotation = (node: NodeType<T> | null) => {
+		// considering that null is a balanced subtree
+		if (isBalanced(node)) return false;
+		const balanceFactor = calculateBalanceFactor(node);
+		if (node!.parentSide === "right") {
+			if (balanceFactor >= 0) return "RR";
+			return "RL";
+		} else if (node!.parentSide === "left") {
+			if (balanceFactor <= 0) return "LL";
+			return "LR";
+		}
+	};
+
+	const leftLeftRotation = (node: NodeType<T>) => {
+		node.parent[node.parentSide!] = node.left;
+	};
+
+	const balance = (node: NodeType<T> | null, rotation: RotationType) => {
+		if (!node) return;
+
+		if (!isBalanced(node.parent)) {
+			const rotation = choseRotation(node.parent);
+			if (rotation) balance(node.parent, rotation);
+		}
+	};
+
+	const addNode = (element: T, node: NodeType<T> = root) => {
+		if (element === node.element) return;
+		if (primitives.compareFn!(element, node.element) === -1) {
+			node.left ? addNode(element, node.left) : (node.left = createNode(element, node, "left"));
+			if (!isBalanced(node.parent)) balance(node.parent, node.parentSide === "left" ? "LL" : "RL");
+		} else if (primitives.compareFn!(element, node.element) === 1) {
+			node.right ? addNode(element, node.right) : (node.right = createNode(element, node, "right"));
+			if (!isBalanced(node.parent)) balance(node.parent, node.parentSide === "right" ? "RR" : "LR");
+		}
+	};
+
+	const height = (rootNode: NodeType<T> = root) => primitives.height(rootNode);
+	const min = (node: NodeType<T> = root): T => primitives.leftMostElement(node);
+	const max = (node: NodeType<T> = root): T => primitives.rightMostElement(node);
+};
+
+export { binarySearchTree };
 
 //      6
 //     /  \
@@ -377,7 +444,7 @@ export { binaryTree };
 //    /       \
 //   3         18
 
-const tree = binaryTree(6);
+const tree = binarySearchTree(6);
 tree.add(2);
 tree.add(1);
 tree.add(4);
