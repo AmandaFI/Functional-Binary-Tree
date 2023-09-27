@@ -2,7 +2,6 @@
 // encontrar a maior arvore balanceada 'dentro' da arvore
 // using cached inOrderTraverse result
 // FAZER TESTES DE TUDO
-//  o p5.js
 // arrumar reduce
 
 // -----------------------------------------------OBS------------------------------------------------------------------
@@ -10,21 +9,18 @@
 // nada impediria de ter 2 iterators, um que retornasse nodes array e outro que retornasse elements array
 // --------------------------------------------------------------------------------------------------------------------
 
+// caching rústico
+
 // https://www.freecodecamp.org/news/binary-search-tree-traversal-inorder-preorder-post-order-for-bst/
 
-// classes em formato de funçaõ são uma forma de ter private em metodos e atributos
+// classes em formato de função são uma forma de ter private em metodos e atributos
 // python, javascript, entre outras o private não "existe" realmente
 
-// incluir height como property do node
-// separa binaryTree em duas funções e reutilizar a primeira para AVL
-// criar novo tipo de Node, incluir balance factor ou calcular ele toda hora usando height ?
-
-type ChildSideType = "left" | "right";
+export type ChildSideType = "left" | "right";
 type OrderType = "Inorder" | "Preorder" | "Postorder";
 type NodeKindType = "Leaf" | "OneChild" | "BothChildren";
-type RotationType = "LL" | "RR" | "LR" | "RL";
 
-type NodeType<T extends {}> = {
+export type NodeType<T extends {}> = {
 	element: T;
 	left: NodeType<T> | null;
 	right: NodeType<T> | null;
@@ -35,7 +31,7 @@ type NodeType<T extends {}> = {
 };
 
 type CompareFnReturnType = -1 | 0 | 1;
-type CompareFnType<T extends {}> = (leftElement: T, rightElement: T) => CompareFnReturnType;
+export type CompareFnType<T extends {}> = (leftElement: T, rightElement: T) => CompareFnReturnType;
 type MapFnType<T> = (element: T, index?: number) => any;
 type FilterFnType<T> = (element: T, index?: number) => boolean;
 type ForEachFnType<T> = (element: T, index?: number) => void;
@@ -47,7 +43,7 @@ type sortedNodesType<T extends {}> = {
 	[level: string]: NodeType<T>[];
 };
 
-const binaryTreeIterationMethods = <T extends {}>(root: NodeType<T>) => {
+export const binaryTreeIterationMethods = <T extends {}>(root: NodeType<T>) => {
 	const visitNodes = (node: NodeType<T> | null = root, order: OrderType = "Inorder"): NodeType<T>[] => {
 		if (!node) return [];
 		const leftChildVisitResult = visitNodes(node.left, order);
@@ -127,7 +123,7 @@ const binaryTreeIterationMethods = <T extends {}>(root: NodeType<T>) => {
 	};
 };
 
-const binaryTreePrimitiveMethods = <T extends {}>(root: NodeType<T>, compareFn?: CompareFnType<T>) => {
+export const binaryTreePrimitiveMethods = <T extends {}>(root: NodeType<T>, compareFn?: CompareFnType<T>) => {
 	compareFn ??= (firstValue, secondValue) => (firstValue === secondValue ? 0 : firstValue > secondValue ? 1 : -1);
 
 	const iterationMethods = binaryTreeIterationMethods(root);
@@ -252,6 +248,16 @@ const binaryTreePrimitiveMethods = <T extends {}>(root: NodeType<T>, compareFn?:
 		});
 	};
 
+	let spaceIncrement = 5;
+	const displayTreeSideways = (node: NodeType<T> | null = root, spaces = 0) => {
+		if (node == null) return;
+		spaces += spaceIncrement;
+		displayTreeSideways(node.right, spaces);
+		[...Array(spaces - spaceIncrement)].forEach(() => process.stdout.write(" "));
+		console.log(node.element);
+		displayTreeSideways(node.left, spaces);
+	};
+
 	return {
 		compareFn,
 		isLeaf,
@@ -264,6 +270,7 @@ const binaryTreePrimitiveMethods = <T extends {}>(root: NodeType<T>, compareFn?:
 		height,
 		displayTreeInline,
 		displayTreePyramid,
+		displayTreeSideways,
 		nodeCount,
 		updateSubtreeLevels,
 		lowestCommonAncestor,
@@ -286,11 +293,10 @@ const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnTyp
 	const primitives = binaryTreePrimitiveMethods(root, compareFn);
 
 	const addNode = (element: T, node: NodeType<T> = root) => {
-		if (element === node.element) return;
-		if (primitives.compareFn!(element, node.element) === -1)
-			node.left ? addNode(element, node.left) : (node.left = createNode(element, node, "left"));
-		else if (primitives.compareFn!(element, node.element) === 1)
-			node.right ? addNode(element, node.right) : (node.right = createNode(element, node, "right"));
+		const comparison = primitives.compareFn!(element, node.element);
+		if (comparison === 0) return;
+		else if (comparison === -1) node.left ? addNode(element, node.left) : (node.left = createNode(element, node, "left"));
+		else node.right ? addNode(element, node.right) : (node.right = createNode(element, node, "right"));
 	};
 
 	const deleteLeafNode = (element: T, parent: NodeType<T> | null) => {
@@ -368,72 +374,6 @@ const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnTyp
 	};
 };
 
-const AVLTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => {
-	if ((typeof rootElement === "object" && !compareFn) || typeof rootElement === "function")
-		throw new Error("Unable to sort tree.");
-
-	const createNode = (element: T, parent: NodeType<T> | null = null, parentSide: ChildSideType | null = null): NodeType<T> => {
-		const level = parent ? parent.level + 1 : 0;
-		const levelPosition = !parent ? 1 : parentSide === "left" ? 2 * parent.levelPosition - 1 : 2 * parent.levelPosition;
-		return { element, left: null, right: null, parent, level, levelPosition, parentSide };
-	};
-
-	const root: NodeType<T> = createNode(rootElement);
-	const primitives = binaryTreePrimitiveMethods(root, compareFn);
-
-	const calculateBalanceFactor = (node: NodeType<T> | null) => {
-		if (!node) return 0;
-		return primitives.height(node.right) - primitives.height(node.left);
-	};
-
-	const isBalanced = (node: NodeType<T> | null) => {
-		const balanceFactor = calculateBalanceFactor(node);
-		if (balanceFactor === -1 || balanceFactor === 0 || balanceFactor === 1) return true;
-		return false;
-	};
-
-	const choseRotation = (node: NodeType<T> | null) => {
-		// considering that null is a balanced subtree
-		if (isBalanced(node)) return false;
-		const balanceFactor = calculateBalanceFactor(node);
-		if (node!.parentSide === "right") {
-			if (balanceFactor >= 0) return "RR";
-			return "RL";
-		} else if (node!.parentSide === "left") {
-			if (balanceFactor <= 0) return "LL";
-			return "LR";
-		}
-	};
-
-	const leftLeftRotation = (node: NodeType<T>) => {
-		node.parent[node.parentSide!] = node.left;
-	};
-
-	const balance = (node: NodeType<T> | null, rotation: RotationType) => {
-		if (!node) return;
-
-		if (!isBalanced(node.parent)) {
-			const rotation = choseRotation(node.parent);
-			if (rotation) balance(node.parent, rotation);
-		}
-	};
-
-	const addNode = (element: T, node: NodeType<T> = root) => {
-		if (element === node.element) return;
-		if (primitives.compareFn!(element, node.element) === -1) {
-			node.left ? addNode(element, node.left) : (node.left = createNode(element, node, "left"));
-			if (!isBalanced(node.parent)) balance(node.parent, node.parentSide === "left" ? "LL" : "RL");
-		} else if (primitives.compareFn!(element, node.element) === 1) {
-			node.right ? addNode(element, node.right) : (node.right = createNode(element, node, "right"));
-			if (!isBalanced(node.parent)) balance(node.parent, node.parentSide === "right" ? "RR" : "LR");
-		}
-	};
-
-	const height = (rootNode: NodeType<T> = root) => primitives.height(rootNode);
-	const min = (node: NodeType<T> = root): T => primitives.leftMostElement(node);
-	const max = (node: NodeType<T> = root): T => primitives.rightMostElement(node);
-};
-
 export { binarySearchTree };
 
 //      6
@@ -458,17 +398,18 @@ tree.add(18);
 // const a = tree.lowestCommonAncestor(4, 6);
 // const a = tree.lowestCommonAncestor(3, 4);
 // const a = tree.lowestCommonAncestor(2, 4);
-const a = tree.lowestCommonAncestor(3, 189);
+// const a = tree.lowestCommonAncestor(3, 189);
 
-console.log(a ? a.element : "no");
+// console.log(a ? a.element : "no");
 
 tree.pyramid();
-tree.remove(1);
+// tree.remove(1);
 
-tree.remove(2);
-tree.pyramid();
+// tree.remove(2);
+// tree.pyramid();
 
 // tree.displayTreeInline();
+// tree.testDisplay();
 
 // let a = tree.visitIterator();
 // //console.log([...a]);
@@ -476,4 +417,4 @@ tree.pyramid();
 
 // // // console.log(tree.validate(tree.root.right!));
 // // tree.remove(10);
-console.log(tree.traverse());
+// console.log(tree.traverse());
