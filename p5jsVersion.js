@@ -5,17 +5,19 @@
 // The spacing between nodes in a given level is calculated by the canvas width divided by the maximun number of nodes that the level accommodates.
 // The spacing between levels is calculated by the canvas height divided by the number of levels in the tree.
 
-const NODE_COLOR = "#ffa07a";
-const EDGE_COLOR = "#ffa07a";
-const PATH_COLOR = "#90ee90";
-const HIGHLIGHTED_NODE_COLOR = "#00ff00";
-const ELEMENT_COLOR = 0;
-const BACKGROUND_COLOR = "#171c26";
-const SEARCHING_COLOR = "#ff4500";
-const REMOVING_COLOR = "red";
-const REPLACING_COLOR = "orange";
-const TRAVERSING_COLOR = "#1e90ff";
-const CURRENT_NODE_COLOR = "#00ffef";
+const colors = {
+	NODE: "#ffa07a",
+	EDGE: "#ffa07a",
+	PATH: "#90ee90",
+	HIGHLIGHTED_NODE: "#00ff00",
+	ELEMENT: 0,
+	BACKGROUND: "#171c26",
+	SEARCHING: "#ff4500",
+	REMOVING: "red",
+	REPLACING: "orange",
+	TRAVERSING: "#1e90ff",
+	CURRENT_NODE: "#00ffef",
+};
 
 const NODE_RADIUS = 40;
 const DELAY = 300;
@@ -33,7 +35,7 @@ let TRAVERSING_NODE = null;
 
 let CURRENT_NODE = null;
 let GENERATOR = null;
-let INORDERORDER_GENERATOR = null;
+let INORDER_GENERATOR = null;
 let PREORDER_GENERATOR = null;
 let POSTORDER_GENERATOR = null;
 
@@ -84,12 +86,10 @@ const binaryTree = (rootElement, compareFn) => {
 		else
 			setTimeout(() => {
 				TREE.displayTree();
-				setTimeout(() => {
-					node[side] = createNode(element, side, node);
-					visitedTree = null;
-					HIGHLIGHTED_NODE = node[side];
-					TREE.displayTree();
-				}, DELAY);
+				node[side] = createNode(element, side, node);
+				visitedTree = null;
+				HIGHLIGHTED_NODE = node[side];
+				setTimeout(() => TREE.displayTree(), DELAY);
 			}, DELAY);
 	};
 
@@ -108,21 +108,19 @@ const binaryTree = (rootElement, compareFn) => {
 		}
 	};
 
-	const ancestralReplacer = node => {
+	const inorderPredecessor = node => {
 		if (node.parent && node.parent.left === node) return node.parent;
-		else if (node.parent) return ancestralReplacer(node.parent);
+		else if (node.parent) return inorderPredecessor(node.parent);
 		return false;
 	};
 
-	const inOrderReplacer = node => {
+	const inorderSucessor = node => {
 		if (node.right) {
 			node = node.right;
 			while (node.left) node = node.left;
 			return node;
-		} else {
-			if (!node.parent) return false;
-			return ancestralReplacer(node);
 		}
+		return false;
 	};
 
 	const updateSubtreeLevels = (node, newLevel, newLevelPosition) => {
@@ -149,13 +147,12 @@ const binaryTree = (rootElement, compareFn) => {
 		setTimeout(() => TREE.displayTree(), DELAY + 100);
 	};
 
-	const deleteNodeWithOneChild = (node, parent) => {
+	const deleteNodeWithOnlyChild = (node, parent) => {
 		REMOVING_NODE = node;
 		let side = node.left ? "left" : "right";
 
 		REPLACER_FOR_ONE_C_NODE = node[side];
 		TREE.displayTree();
-		//node[side].parentPos = node.parentPos;
 
 		updateSubtreeLevels(REPLACER_FOR_ONE_C_NODE, node.level, node.levelPosition);
 
@@ -172,8 +169,8 @@ const binaryTree = (rootElement, compareFn) => {
 		}, DELAY + 100);
 	};
 
-	const deleteNodeWithTwoChildren = (node, parent) => {
-		REPLACER_FOR_TWO_C_NODE = inOrderReplacer(node);
+	const deleteNodeWithBothChildren = (node, parent) => {
+		REPLACER_FOR_TWO_C_NODE = node.right ? inorderSucessor(node) : inorderPredecessor(node);
 		REMOVING_NODE = node;
 		if (!REPLACER_FOR_TWO_C_NODE) throw new Error("Node with two children without parent.");
 		TREE.displayTree();
@@ -201,8 +198,8 @@ const binaryTree = (rootElement, compareFn) => {
 		if (node.element === element) {
 			if (!node.parent && node !== root) throw new Error(`Can not delete node with no parent.`);
 			if (isLeaf(node)) deleteLeafNode(node, node.parent);
-			else if (hasTwoChildren(node)) deleteNodeWithTwoChildren(node, node.parent);
-			else deleteNodeWithOneChild(node, node.parent);
+			else if (hasTwoChildren(node)) deleteNodeWithBothChildren(node, node.parent);
+			else deleteNodeWithOnlyChild(node, node.parent);
 			return true;
 		}
 		if (compareFn(element, node.element) === -1) return deleteNode(element, node.left);
@@ -264,28 +261,28 @@ const binaryTree = (rootElement, compareFn) => {
 	};
 
 	const edgeColor = node => {
-		if (PATH_TRAVELED.includes(node) || node === HIGHLIGHTED_NODE) return PATH_COLOR;
-		return EDGE_COLOR;
+		if (PATH_TRAVELED.includes(node) || node === HIGHLIGHTED_NODE) return colors.PATH;
+		return colors.EDGE;
 	};
 
 	const nodeColor = node => {
-		if (PATH_TRAVELED.includes(node)) return PATH_COLOR;
+		if (PATH_TRAVELED.includes(node)) return colors.PATH;
 		switch (node) {
 			case SEARCHING_NODE:
-				return SEARCHING_COLOR;
+				return colors.SEARCHING;
 			case HIGHLIGHTED_NODE:
-				return HIGHLIGHTED_NODE_COLOR;
+				return colors.HIGHLIGHTED_NODE;
 			case REMOVING_NODE:
-				return REMOVING_COLOR;
+				return colors.REMOVING;
 			case REPLACER_FOR_TWO_C_NODE:
 			case REPLACER_FOR_ONE_C_NODE:
-				return REPLACING_COLOR;
+				return colors.REPLACING;
 			case TRAVERSING_NODE:
-				return TRAVERSING_COLOR;
+				return colors.TRAVERSING;
 			case CURRENT_NODE:
-				return CURRENT_NODE_COLOR;
+				return colors.CURRENT_NODE;
 			default:
-				return NODE_COLOR;
+				return colors.NODE;
 		}
 	};
 
@@ -294,7 +291,7 @@ const binaryTree = (rootElement, compareFn) => {
 		for (let [index, node] of orderedNodes.entries()) fn(node.element, index);
 	};
 
-	const sortNodesByLevel = () => {
+	sortNodesByLevel = () => {
 		if (!visitedTree) visitedTree = visit(root);
 
 		const sortedNodes = {};
@@ -306,7 +303,7 @@ const binaryTree = (rootElement, compareFn) => {
 		return sortedNodes;
 	};
 
-	const setNodesPositions = () => {
+	setNodesPositions = () => {
 		let sortedNodes = sortNodesByLevel();
 		const ySpacing = height / (Object.keys(sortedNodes).length + 1); // + 1 avoids sticking the root node  to the top of the screen
 
@@ -319,11 +316,12 @@ const binaryTree = (rootElement, compareFn) => {
 		});
 	};
 
-	const displayTree = () => {
+	displayTree = () => {
 		setNodesPositions();
 
 		if (!visitedTree) visitedTree = visit(root);
-		background(BACKGROUND_COLOR);
+		background(colors.BACKGROUND);
+
 		visitedTree.forEach(node => {
 			if (node.left) {
 				stroke(edgeColor(node.left));
@@ -337,7 +335,7 @@ const binaryTree = (rootElement, compareFn) => {
 			noStroke();
 			circle(node.x, node.y, NODE_RADIUS);
 			noStroke();
-			fill(0);
+			fill(colors.ELEMENT);
 			textSize(17);
 			text(node.element, node.x - NODE_RADIUS / 4, node.y + NODE_RADIUS / 5);
 		});
@@ -400,20 +398,20 @@ const binaryTree = (rootElement, compareFn) => {
 const addNodeBtnFn = () => {
 	if (!inputBox.value().match(/^\d+\.?\d*$/)) return;
 	unhighlightNodesFn();
-	if (!TREE) TREE = binaryTree(+inputBox.value());
-	else TREE.add(+inputBox.value());
+	if (!TREE) {
+		TREE = binaryTree(+inputBox.value());
+		TREE.displayTree();
+	} else TREE.add(+inputBox.value());
 };
 
 const deleteNodeBtnFn = () => {
-	if (!inputBox.value().match(/^\d+\.?\d*$/)) return;
-	if (!TREE) return;
+	if (!inputBox.value().match(/^\d+\.?\d*$/) || !TREE) return;
 	unhighlightNodesFn();
 	TREE.removeNode(+inputBox.value());
 };
 
 const searchNodeBtnFn = () => {
-	if (!inputBox.value().match(/^\d+\.?\d*$/)) return;
-	if (!TREE) return;
+	if (!inputBox.value().match(/^\d+\.?\d*$/) || !TREE) return;
 	unhighlightNodesFn();
 	TREE.search(+inputBox.value());
 };
@@ -436,7 +434,7 @@ const resetVariables = () => {
 const resetTreeBtnFn = () => {
 	TREE = null;
 	resetVariables();
-	background(BACKGROUND_COLOR);
+	background(colors.BACKGROUND);
 };
 
 const unhighlightNodesFn = () => {
@@ -579,7 +577,7 @@ function setup() {
 	createCanvas(800, 600);
 	//createCanvas(1400, 800);
 
-	background(BACKGROUND_COLOR);
+	background(colors.BACKGROUND);
 
 	inputBox = createInput("");
 	inputBox.position(5, 5);
