@@ -9,7 +9,7 @@ const colors = {
 	NODE: "#ffa07a",
 	EDGE: "#ffa07a",
 	PATH: "#90ee90",
-	HIGHLIGHTED_NODE: "#00ff00",
+	HIGHLIGHT: "#00ff00",
 	ELEMENT: 0,
 	BACKGROUND: "#171c26",
 	SEARCHING: "#ff4500",
@@ -19,6 +19,18 @@ const colors = {
 	CURRENT_NODE: "#00ffef",
 };
 
+const coloredNodes = {
+	HIGHLIGHTED: null,
+	SEARCHING: null,
+	REMOVING: null,
+	REPLACER_FOR_ONE_C: null,
+	REPLACER_FOR_TWO_C: null,
+	TRAVERSING: null,
+	CURRENT_GENERATOR: null,
+};
+
+let actionInProgress = false;
+
 const NODE_RADIUS = 40;
 const DELAY = 300;
 
@@ -26,15 +38,7 @@ let TREE = null;
 
 let PATH_TRAVELED = [];
 
-let HIGHLIGHTED_NODE = null;
-let SEARCHING_NODE = null;
-let REMOVING_NODE = null;
-let REPLACER_FOR_ONE_C_NODE = null;
-let REPLACER_FOR_TWO_C_NODE = null;
-let TRAVERSING_NODE = null;
-
-let CURRENT_NODE = null;
-let GENERATOR = null;
+let NAVIGATE_GENERATOR = null;
 let INORDER_GENERATOR = null;
 let PREORDER_GENERATOR = null;
 let POSTORDER_GENERATOR = null;
@@ -78,6 +82,7 @@ const binaryTree = (rootElement, compareFn) => {
 		else if (compareFn(element, node.element) === 1) side = "right";
 		else {
 			unhighlightNodesFn();
+			actionInProgress = false;
 			return;
 		}
 
@@ -88,8 +93,11 @@ const binaryTree = (rootElement, compareFn) => {
 				TREE.displayTree();
 				node[side] = createNode(element, side, node);
 				visitedTree = null;
-				HIGHLIGHTED_NODE = node[side];
-				setTimeout(() => TREE.displayTree(), DELAY);
+				coloredNodes.HIGHLIGHTED = node[side];
+				setTimeout(() => {
+					TREE.displayTree();
+					actionInProgress = false;
+				}, DELAY);
 			}, DELAY);
 	};
 
@@ -106,12 +114,6 @@ const binaryTree = (rootElement, compareFn) => {
 			node[side] = createNode(element, side, node);
 			visitedTree = null;
 		}
-	};
-
-	const inorderPredecessor = node => {
-		if (node.parent && node.parent.left === node) return node.parent;
-		else if (node.parent) return inorderPredecessor(node.parent);
-		return false;
 	};
 
 	const inorderSucessor = node => {
@@ -135,56 +137,65 @@ const binaryTree = (rootElement, compareFn) => {
 
 	const deleteLeafNode = (node, parent) => {
 		if (!parent) return;
-		REMOVING_NODE = node;
+		coloredNodes.REMOVING = node;
 		TREE.displayTree();
 
 		if (parent.left && parent.left.element === node.element) parent.left = null;
 		else parent.right = null;
 
 		visitedTree = null;
-		REMOVING_NODE = null;
+		coloredNodes.REMOVING = null;
 
-		setTimeout(() => TREE.displayTree(), DELAY + 100);
+		setTimeout(() => {
+			TREE.displayTree();
+			actionInProgress = false;
+		}, DELAY + 100);
 	};
 
 	const deleteNodeWithOnlyChild = (node, parent) => {
-		REMOVING_NODE = node;
+		coloredNodes.REMOVING = node;
 		let side = node.left ? "left" : "right";
 
-		REPLACER_FOR_ONE_C_NODE = node[side];
+		coloredNodes.REPLACER_FOR_ONE_C = node[side];
 		TREE.displayTree();
+		//node[side].parentPos = node.parentPos;
 
-		updateSubtreeLevels(REPLACER_FOR_ONE_C_NODE, node.level, node.levelPosition);
+		updateSubtreeLevels(coloredNodes.REPLACER_FOR_ONE_C, node.level, node.levelPosition);
 
 		visitedTree = null;
-		if (!parent) root.element = REPLACER_FOR_ONE_C_NODE.element;
-		else {
-			REPLACER_FOR_ONE_C_NODE.parent = parent;
-			if (parent.left && parent.left.element === node.element) parent.left = REPLACER_FOR_ONE_C_NODE;
-			else parent.right = REPLACER_FOR_ONE_C_NODE;
+		if (!parent) {
+			root.element = coloredNodes.REPLACER_FOR_ONE_C.element;
+			root.left = coloredNodes.REPLACER_FOR_ONE_C.left;
+			root.right = coloredNodes.REPLACER_FOR_ONE_C.right;
+		} else {
+			coloredNodes.REPLACER_FOR_ONE_C.parent = parent;
+			if (parent.left && parent.left.element === node.element) parent.left = coloredNodes.REPLACER_FOR_ONE_C;
+			else parent.right = coloredNodes.REPLACER_FOR_ONE_C;
 		}
 		setTimeout(() => {
 			TREE.displayTree();
 			REPLACER_NODE = null;
+			actionInProgress = false;
 		}, DELAY + 100);
 	};
 
 	const deleteNodeWithBothChildren = (node, parent) => {
-		REPLACER_FOR_TWO_C_NODE = node.right ? inorderSucessor(node) : inorderPredecessor(node);
-		REMOVING_NODE = node;
-		if (!REPLACER_FOR_TWO_C_NODE) throw new Error("Node with two children without parent.");
+		coloredNodes.REPLACER_FOR_TWO_C = inorderSucessor(node);
+		coloredNodes.REMOVING = node;
+		if (!coloredNodes.REPLACER_FOR_TWO_C) throw new Error("Node with two children without parent.");
 		TREE.displayTree();
 		setTimeout(() => {
-			deleteNode(REPLACER_FOR_TWO_C_NODE.element);
+			deleteNode(coloredNodes.REPLACER_FOR_TWO_C.element);
 			visitedTree = null;
 			if (!parent) {
-				root.element = REPLACER_FOR_TWO_C_NODE.element;
-				REPLACER_FOR_TWO_C_NODE = root;
+				root.element = coloredNodes.REPLACER_FOR_TWO_C.element;
+				coloredNodes.REPLACER_FOR_TWO_C = root;
 			} else {
 				const side = parent.left === node ? "left" : "right";
-				parent[side].element = REPLACER_FOR_TWO_C_NODE.element;
-				REPLACER_FOR_TWO_C_NODE = parent[side];
+				parent[side].element = coloredNodes.REPLACER_FOR_TWO_C.element;
+				coloredNodes.REPLACER_FOR_TWO_C = parent[side];
 			}
+			actionInProgress = false;
 		}, DELAY + 200);
 	};
 
@@ -227,17 +238,19 @@ const binaryTree = (rootElement, compareFn) => {
 		if (!node) {
 			alert("Element is not in the tree.");
 			unhighlightNodesFn();
+			actionInProgress = false;
 			return;
 		}
-		SEARCHING_NODE = node;
+		coloredNodes.SEARCHING = node;
 		TREE.displayTree();
 
 		const comparison = compareFn(value, node.element);
 		switch (comparison) {
 			case 0:
-				HIGHLIGHTED_NODE = node;
-				SEARCHING_NODE = null;
+				coloredNodes.HIGHLIGHTED = node;
+				coloredNodes.SEARCHING = null;
 				TREE.displayTree();
+				actionInProgress = false;
 				return;
 			case -1:
 				setTimeout(() => searchNode(value, node.left), DELAY);
@@ -251,35 +264,39 @@ const binaryTree = (rootElement, compareFn) => {
 	};
 
 	const displayTraverse = array => {
-		if (!array) return;
-		setTimeout(() => {
-			TRAVERSING_NODE = array[0];
-			TREE.displayTree();
-			if (array.length === 1) TRAVERSING_NODE = null;
-			else displayTraverse(array.slice(1));
-		}, 800);
+		if (!array) actionInProgress = false;
+		else {
+			setTimeout(() => {
+				coloredNodes.TRAVERSING = array[0];
+				TREE.displayTree();
+				if (array.length === 1) {
+					coloredNodes.TRAVERSING = null;
+					actionInProgress = false;
+				} else displayTraverse(array.slice(1));
+			}, 800);
+		}
 	};
 
 	const edgeColor = node => {
-		if (PATH_TRAVELED.includes(node) || node === HIGHLIGHTED_NODE) return colors.PATH;
+		if (PATH_TRAVELED.includes(node) || node === coloredNodes.HIGHLIGHTED) return colors.PATH;
 		return colors.EDGE;
 	};
 
 	const nodeColor = node => {
 		if (PATH_TRAVELED.includes(node)) return colors.PATH;
 		switch (node) {
-			case SEARCHING_NODE:
+			case coloredNodes.SEARCHING:
 				return colors.SEARCHING;
-			case HIGHLIGHTED_NODE:
-				return colors.HIGHLIGHTED_NODE;
-			case REMOVING_NODE:
+			case coloredNodes.HIGHLIGHTED:
+				return colors.HIGHLIGHT;
+			case coloredNodes.REMOVING:
 				return colors.REMOVING;
-			case REPLACER_FOR_TWO_C_NODE:
-			case REPLACER_FOR_ONE_C_NODE:
+			case coloredNodes.REPLACER_FOR_TWO_C:
+			case coloredNodes.REPLACER_FOR_ONE_C:
 				return colors.REPLACING;
-			case TRAVERSING_NODE:
+			case coloredNodes.TRAVERSING:
 				return colors.TRAVERSING;
-			case CURRENT_NODE:
+			case coloredNodes.CURRENT_GENERATOR:
 				return colors.CURRENT_NODE;
 			default:
 				return colors.NODE;
@@ -321,7 +338,6 @@ const binaryTree = (rootElement, compareFn) => {
 
 		if (!visitedTree) visitedTree = visit(root);
 		background(colors.BACKGROUND);
-
 		visitedTree.forEach(node => {
 			if (node.left) {
 				stroke(edgeColor(node.left));
@@ -342,31 +358,40 @@ const binaryTree = (rootElement, compareFn) => {
 	};
 
 	function* navigateIterator() {
-		let direction = yield CURRENT_NODE;
+		let direction = yield coloredNodes.CURRENT_GENERATOR;
 
 		while (direction !== "stop") {
-			if (direction === "parent") direction = yield CURRENT_NODE.parent ? CURRENT_NODE.parent : CURRENT_NODE;
-			else if (direction === "left") direction = yield CURRENT_NODE.left ? CURRENT_NODE.left : CURRENT_NODE;
-			else if (direction === "right") direction = yield CURRENT_NODE.right ? CURRENT_NODE.right : CURRENT_NODE;
+			if (direction === "parent")
+				direction = yield coloredNodes.CURRENT_GENERATOR.parent
+					? coloredNodes.CURRENT_GENERATOR.parent
+					: coloredNodes.CURRENT_GENERATOR;
+			else if (direction === "left")
+				direction = yield coloredNodes.CURRENT_GENERATOR.left
+					? coloredNodes.CURRENT_GENERATOR.left
+					: coloredNodes.CURRENT_GENERATOR;
+			else if (direction === "right")
+				direction = yield coloredNodes.CURRENT_GENERATOR.right
+					? coloredNodes.CURRENT_GENERATOR.right
+					: coloredNodes.CURRENT_GENERATOR;
 		}
 		return;
 	}
 
-	function* inorderIterator(node = CURRENT_NODE) {
+	function* inorderIterator(node = coloredNodes.CURRENT_GENERATOR) {
 		if (node.left) yield* inorderIterator(node.left);
 		yield node;
 		if (node.right) yield* inorderIterator(node.right);
 		return;
 	}
 
-	function* preorderIterator(node = CURRENT_NODE) {
+	function* preorderIterator(node = coloredNodes.CURRENT_GENERATOR) {
 		yield node;
 		if (node.left) yield* preorderIterator(node.left);
 		if (node.right) yield* preorderIterator(node.right);
 		return;
 	}
 
-	function* postorderIterator(node = CURRENT_NODE) {
+	function* postorderIterator(node = coloredNodes.CURRENT_GENERATOR) {
 		if (node.left) yield* postorderIterator(node.left);
 		if (node.right) yield* postorderIterator(node.right);
 		yield node;
@@ -396,42 +421,51 @@ const binaryTree = (rootElement, compareFn) => {
 };
 
 const addNodeBtnFn = () => {
+	if (actionInProgress) return;
 	if (!inputBox.value().match(/^\d+\.?\d*$/)) return;
 	unhighlightNodesFn();
 	if (!TREE) {
 		TREE = binaryTree(+inputBox.value());
 		TREE.displayTree();
-	} else TREE.add(+inputBox.value());
+	} else {
+		actionInProgress = true;
+		TREE.add(+inputBox.value());
+	}
 };
 
 const deleteNodeBtnFn = () => {
+	if (actionInProgress) return;
 	if (!inputBox.value().match(/^\d+\.?\d*$/) || !TREE) return;
 	unhighlightNodesFn();
+	actionInProgress = true;
 	TREE.removeNode(+inputBox.value());
 };
 
 const searchNodeBtnFn = () => {
+	if (actionInProgress) return;
 	if (!inputBox.value().match(/^\d+\.?\d*$/) || !TREE) return;
 	unhighlightNodesFn();
+	actionInProgress = true;
 	TREE.search(+inputBox.value());
 };
 
 const resetVariables = () => {
 	PATH_TRAVELED = [];
-	HIGHLIGHTED_NODE = null;
-	SEARCHING_NODE = null;
-	REMOVING_NODE = null;
-	REPLACER_FOR_TWO_C_NODE = null;
-	REPLACER_FOR_ONE_C_NODE = null;
-	TRAVERSING_NODE = null;
+	coloredNodes.HIGHLIGHTED = null;
+	coloredNodes.SEARCHING = null;
+	coloredNodes.REMOVING = null;
+	coloredNodes.REPLACER_FOR_TWO_C = null;
+	coloredNodes.REPLACER_FOR_ONE_C = null;
+	coloredNodes.TRAVERSING = null;
 	stopGenerator();
 	POSTORDER_GENERATOR = null;
 	INORDER_GENERATOR = null;
 	PREORDER_GENERATOR = null;
-	CURRENT_NODE = null;
+	coloredNodes.CURRENT_GENERATOR = null;
 };
 
 const resetTreeBtnFn = () => {
+	if (actionInProgress) return;
 	TREE = null;
 	resetVariables();
 	background(colors.BACKGROUND);
@@ -444,6 +478,7 @@ const unhighlightNodesFn = () => {
 };
 
 const RandomFillTreeBtnFn = () => {
+	if (actionInProgress) return;
 	unhighlightNodesFn();
 	const nNodes = Math.random() * (10 - 6) + 6;
 	TREE = binaryTree(Math.floor(Math.random() * 30));
@@ -453,124 +488,138 @@ const RandomFillTreeBtnFn = () => {
 };
 
 const inorderTraverseBtnFn = () => {
-	if (!TREE) return;
+	if (!TREE || actionInProgress) return;
 	unhighlightNodesFn();
 	const inorderNodes = TREE.traverse();
+	actionInProgress = true;
 	TREE.displayTraverse(inorderNodes);
 };
 
 const preorderTraverseBtnFn = () => {
-	if (!TREE) return;
+	if (!TREE || actionInProgress) return;
 	unhighlightNodesFn();
 	const inorderNodes = TREE.traverse("Preorder");
+	actionInProgress = true;
 	TREE.displayTraverse(inorderNodes);
 };
 
 const postorderTraverseBtnFn = () => {
-	if (!TREE) return;
+	if (!TREE || actionInProgress) return;
 	unhighlightNodesFn();
 	const inorderNodes = TREE.traverse("Postorder");
+	actionInProgress = true;
 	TREE.displayTraverse(inorderNodes);
 };
 
 const startGenerator = () => {
+	if (actionInProgress) return;
 	unhighlightNodesFn();
-	GENERATOR = TREE.navigateIterator();
-	GENERATOR.next();
-	CURRENT_NODE = TREE.root;
+	NAVIGATE_GENERATOR = TREE.navigateIterator();
+	NAVIGATE_GENERATOR.next();
+	coloredNodes.CURRENT_GENERATOR = TREE.root;
 	TREE.displayTree();
 };
 
 const stopGenerator = () => {
-	if (!GENERATOR) return;
-	GENERATOR.next("stop");
-	GENERATOR = null;
-	CURRENT_NODE = null;
+	if (!NAVIGATE_GENERATOR || actionInProgress) return;
+	NAVIGATE_GENERATOR.next("stop");
+	NAVIGATE_GENERATOR = null;
+	coloredNodes.CURRENT_GENERATOR = null;
 	unhighlightNodesFn();
 };
 
 const moveToLeftChild = () => {
-	if (!TREE) return;
-	if (!GENERATOR) startGenerator();
-	let result = GENERATOR.next("left");
-	CURRENT_NODE = result.done ? null : result.value;
+	if (!TREE || actionInProgress) return;
+	if (!NAVIGATE_GENERATOR) startGenerator();
+	let result = NAVIGATE_GENERATOR.next("left");
+	coloredNodes.CURRENT_GENERATOR = result.done ? null : result.value;
 	TREE.displayTree();
 };
 
 const moveToRightChild = () => {
-	if (!TREE) return;
-	if (!GENERATOR) startGenerator();
-	let result = GENERATOR.next("right");
-	CURRENT_NODE = result.done ? null : result.value;
+	if (!TREE || actionInProgress) return;
+	if (!NAVIGATE_GENERATOR) startGenerator();
+	let result = NAVIGATE_GENERATOR.next("right");
+	coloredNodes.CURRENT_GENERATOR = result.done ? null : result.value;
 	TREE.displayTree();
 };
 
 const moveToParent = () => {
-	if (!TREE) return;
-	if (!GENERATOR) startGenerator();
-	let result = GENERATOR.next("parent");
-	CURRENT_NODE = result.done ? null : result.value;
+	if (!TREE || actionInProgress) return;
+	if (!NAVIGATE_GENERATOR) startGenerator();
+	let result = NAVIGATE_GENERATOR.next("parent");
+	coloredNodes.CURRENT_GENERATOR = result.done ? null : result.value;
 	TREE.displayTree();
 };
 
 const startPostGenerator = () => {
+	if (actionInProgress) return;
 	unhighlightNodesFn();
-	CURRENT_NODE = TREE.root;
+	coloredNodes.CURRENT_GENERATOR = TREE.root;
 	POSTORDER_GENERATOR = TREE.postorderIterator();
 };
 
 const stepPostorderTraverseBtnFn = () => {
-	if (!TREE) return;
+	if (!TREE || actionInProgress) return;
 	if (!POSTORDER_GENERATOR) startPostGenerator();
 	let result = POSTORDER_GENERATOR.next();
 	if (result.done) {
 		POSTORDER_GENERATOR = null;
-		CURRENT_NODE = null;
+		coloredNodes.CURRENT_GENERATOR = null;
 		TREE.displayTree();
 		return;
 	}
-	CURRENT_NODE = result.value;
+	coloredNodes.CURRENT_GENERATOR = result.value;
 	TREE.displayTree();
 };
 
 const startInorderGenerator = () => {
+	if (actionInProgress) return;
 	unhighlightNodesFn();
-	CURRENT_NODE = TREE.root;
+	coloredNodes.CURRENT_GENERATOR = TREE.root;
 	INORDER_GENERATOR = TREE.inorderIterator();
 };
 
 const stepInorderTraverseBtnFn = () => {
-	if (!TREE) return;
+	if (!TREE || actionInProgress) return;
 	if (!INORDER_GENERATOR) startInorderGenerator();
 	let result = INORDER_GENERATOR.next();
 	if (result.done) {
 		INORDER_GENERATOR = null;
-		CURRENT_NODE = null;
+		coloredNodes.CURRENT_GENERATOR = null;
 		TREE.displayTree();
 		return;
 	}
-	CURRENT_NODE = result.value;
+	coloredNodes.CURRENT_GENERATOR = result.value;
 	TREE.displayTree();
 };
 
 const startPreorderGenerator = () => {
+	if (actionInProgress) return;
 	unhighlightNodesFn();
-	CURRENT_NODE = TREE.root;
+	coloredNodes.CURRENT_GENERATOR = TREE.root;
 	PREORDER_GENERATOR = TREE.preorderIterator();
 };
 
 const stepPreorderTraverseBtnFn = () => {
-	if (!TREE) return;
+	if (!TREE || actionInProgress) return;
 	if (!PREORDER_GENERATOR) startPreorderGenerator();
 	let result = PREORDER_GENERATOR.next();
 	if (result.done) {
 		PREORDER_GENERATOR = null;
-		CURRENT_NODE = null;
+		coloredNodes.CURRENT_GENERATOR = null;
 		TREE.displayTree();
 		return;
 	}
-	CURRENT_NODE = result.value;
+	coloredNodes.CURRENT_GENERATOR = result.value;
 	TREE.displayTree();
+};
+
+const button = (title, x, y, pressedFn) => {
+	const btn = createButton(title);
+	btn.position(x, y);
+	btn.mousePressed(pressedFn);
+	return btn;
 };
 
 function setup() {
@@ -583,55 +632,24 @@ function setup() {
 	inputBox.position(5, 5);
 	inputBox.size(57);
 
-	addBtn = createButton("Add");
-	addBtn.position(72, 5);
-	addBtn.mousePressed(addNodeBtnFn);
-	delBtn = createButton("Delete");
-	delBtn.position(114, 5);
-	delBtn.mousePressed(deleteNodeBtnFn);
-	searchBtn = createButton("Search");
-	searchBtn.position(171, 5);
-	searchBtn.mousePressed(searchNodeBtnFn);
+	addBtn = button("Add", 72, 5, addNodeBtnFn);
+	delBtn = button("Delete", 114, 5, deleteNodeBtnFn);
+	searchBtn = button("Search", 171, 5, searchNodeBtnFn);
+	resetBtn = button("Reset", 5, 30, resetTreeBtnFn);
+	unhighlightBtn = button("Unhighlight", 58, 30, unhighlightNodesFn);
+	randomFillBtn = button("Random Fill", 143, 30, RandomFillTreeBtnFn);
 
-	resetBtn = createButton("Reset");
-	resetBtn.position(5, 30);
-	resetBtn.mousePressed(resetTreeBtnFn);
-	unhighlightBtn = createButton("Unhighlight");
-	unhighlightBtn.position(58, 30);
-	unhighlightBtn.mousePressed(unhighlightNodesFn);
-	randomFillBtn = createButton("Random Fill");
-	randomFillBtn.position(143, 30);
-	randomFillBtn.mousePressed(RandomFillTreeBtnFn);
+	inorderTraverseBtn = button("Inorder Traverse", 426, 5, inorderTraverseBtnFn);
+	preorderTraverseBtn = button("Preorder Traverse", 543, 5, preorderTraverseBtnFn);
+	postOrdeTraverseBtn = button("Postorder Traverse", 668, 5, postorderTraverseBtnFn);
 
-	inorderTraverseBtn = createButton("Inorder Traverse");
-	inorderTraverseBtn.position(426, 5);
-	inorderTraverseBtn.mousePressed(inorderTraverseBtnFn);
-	preorderTraverseBtn = createButton("Preorder Traverse");
-	preorderTraverseBtn.position(543, 5);
-	preorderTraverseBtn.mousePressed(preorderTraverseBtnFn);
-	postOrdeTraverseBtn = createButton("Postorder Traverse");
-	postOrdeTraverseBtn.position(668, 5);
-	postOrdeTraverseBtn.mousePressed(postorderTraverseBtnFn);
+	stepInorderTraverseBtn = button("Step Inorder", 426, 27, stepInorderTraverseBtnFn);
+	stepPreorderTraverseBtn = button("Step Preorder", 543, 27, stepPreorderTraverseBtnFn);
+	stepPostOrdeTraverseBtn = button("Step Postorder", 668, 27, stepPostorderTraverseBtnFn);
 
-	stepInorderTraverseBtn = createButton("Step Inorder");
-	stepInorderTraverseBtn.position(426, 27);
-	stepInorderTraverseBtn.mousePressed(stepInorderTraverseBtnFn);
-	stepPreorderTraverseBtn = createButton("Step Preorder");
-	stepPreorderTraverseBtn.position(543, 27);
-	stepPreorderTraverseBtn.mousePressed(stepPreorderTraverseBtnFn);
-	stepPostOrdeTraverseBtn = createButton("Step Postorder");
-	stepPostOrdeTraverseBtn.position(668, 27);
-	stepPostOrdeTraverseBtn.mousePressed(stepPostorderTraverseBtnFn);
-
-	parentBtn = createButton("\u25B2");
-	parentBtn.position(26, 60);
-	parentBtn.mousePressed(moveToParent);
-	leftChildBtn = createButton("\u276E");
-	leftChildBtn.position(12, 83);
-	leftChildBtn.mousePressed(moveToLeftChild);
-	rightChildBtn = createButton("\u276F");
-	rightChildBtn.position(44, 83);
-	rightChildBtn.mousePressed(moveToRightChild);
+	parentBtn = button("\u25B2", 26, 60, moveToParent);
+	leftChildBtn = button("\u276E", 12, 83, moveToLeftChild);
+	rightChildBtn = button("\u276F", 44, 83, moveToRightChild);
 }
 
 function draw() {}
