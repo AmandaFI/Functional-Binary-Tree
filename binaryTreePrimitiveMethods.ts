@@ -1,10 +1,21 @@
 import { forEachNode, visitNodes } from "./binaryTreeIterationMethods";
-import { CompareFnType, NodeKindType, NodeType, sortedNodesType } from "./binaryTreeTypes";
+import { ChildSideType, CompareFnType, NodeKindType, NodeType, sortedNodesType } from "./binaryTreeTypes";
 
+// {} allows all types except undefined and null
 export const defineCompareFn = <T extends {}>(compareFn?: CompareFnType<T>) => {
 	return compareFn
 		? compareFn
 		: (firstValue: T, secondValue: T) => (firstValue === secondValue ? 0 : firstValue > secondValue ? 1 : -1);
+};
+
+export const createNode = <T extends {}>(
+	element: T,
+	parent: NodeType<T> | null = null,
+	parentSide: ChildSideType | null = null
+) => {
+	const level = parent ? parent.level + 1 : 0;
+	const levelPosition = !parent ? 1 : parentSide === "left" ? 2 * parent.levelPosition - 1 : 2 * parent.levelPosition;
+	return { element, left: null, right: null, parent, level, levelPosition, parentSide };
 };
 
 export const isLeaf = <T extends {}>(node: NodeType<T>) => !node.left && !node.right;
@@ -54,6 +65,17 @@ export const isBinarySearchTree = <T extends {}>(rootNode: NodeType<T> | null): 
 	if (rootNode.left && rootNode.left.element >= rootNode.element) return false;
 	else if (rootNode.right && rootNode.right.element <= rootNode.element) return false;
 	return true && isBinarySearchTree(rootNode.left) && isBinarySearchTree(rootNode.right);
+};
+
+export const replaceRoot = <T extends {}>(root: NodeType<T>, replacer: NodeType<T>) => {
+	root.element = replacer.element;
+	root.left = replacer.left;
+	root.right = replacer.right;
+};
+
+export const connectNodes = <T extends {}>(parent: NodeType<T>, child: NodeType<T>, childPosition: ChildSideType) => {
+	child.parent = parent;
+	parent[childPosition] = child;
 };
 
 export const lowestCommonAncestor = <T extends {}>(
