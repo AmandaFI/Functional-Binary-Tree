@@ -6,21 +6,16 @@
 
 import {
 	defineCompareFn,
-	updateSubtreeLevels,
-	inorderSuccessor,
-	isLeaf,
-	hasBothChildren,
 	leftMostElement,
 	rightMostElement,
 	displayTreeInline,
 	displayTreePyramid,
 	treeHeight,
 	createNode,
-	replaceRoot,
-	connectNodes,
 } from "./binaryTreePrimitiveMethods";
 import { CompareFnType, FilterFnType, ForEachFnType, MapFnType, NodeType, OrderType, ReduceFnType } from "./binaryTreeTypes";
 import { filterTree, forEachElement, mapTree, reduceTree, traverseTree, visitElements } from "./binaryTreeIterationMethods";
+import { addNode, deleteNode, searchNode } from "./binarySearchTreeOperations";
 
 // -----------------------------------------------OBS------------------------------------------------------------------
 // coisas que querem iterar pelos nodes utilizam o visit e os que querem iterar pelos elements utilizam o iterator
@@ -39,63 +34,9 @@ const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnTyp
 	const root: NodeType<T> = createNode<T>(rootElement);
 	compareFn = defineCompareFn(compareFn);
 
-	const addNode = (element: T, node: NodeType<T> = root) => {
-		const comparison = compareFn!(element, node.element);
-		if (comparison === 0) return;
-		else if (comparison === -1) node.left ? addNode(element, node.left) : (node.left = createNode(element, node, "left"));
-		else node.right ? addNode(element, node.right) : (node.right = createNode(element, node, "right"));
-	};
-
-	const deleteLeafNode = (element: T, parent: NodeType<T> | null) => {
-		if (!parent) throw new Error("Root deletion not allowed.");
-		parent.left?.element === element ? (parent.left = null) : (parent.right = null);
-	};
-
-	const deleteNodeWithOnlyChild = (node: NodeType<T>, parent: NodeType<T> | null) => {
-		const replacer = node.left ? node.left : node.right;
-		if (!replacer) throw new Error("No replacer.");
-
-		updateSubtreeLevels(replacer!, node.level, node.levelPosition);
-
-		if (!parent) replaceRoot(root, replacer);
-		else connectNodes(parent, replacer, parent.left?.element === node.element ? "left" : "right");
-	};
-
-	const deleteNodeWithBothChildren = (node: NodeType<T>, parent: NodeType<T> | null) => {
-		const replacer = inorderSuccessor(node);
-		if (!replacer) throw new Error("Node with two children without parent.");
-
-		deleteNode(replacer.element);
-		if (!parent) root.element = replacer.element;
-		else parent.left === node ? (parent.left.element = replacer.element) : (parent.right!.element = replacer.element);
-	};
-
-	const deleteNode = (element: T, node: NodeType<T> | null = root): boolean => {
-		if (!node) return false;
-		if (element === root.element && isLeaf(root)) throw new Error("Root deletion not allowed.");
-
-		if (node.element === element) {
-			if (isLeaf(node)) deleteLeafNode(element, node.parent);
-			else if (hasBothChildren(node)) deleteNodeWithBothChildren(node, node.parent);
-			else deleteNodeWithOnlyChild(node, node.parent);
-			return true;
-		}
-		if (compareFn!(element, node.element) === -1) return deleteNode(element, node.left);
-		else if (compareFn!(element, node.element) === 1) return deleteNode(element, node.right);
-		return false;
-	};
-
-	const searchNode = (value: T, node: NodeType<T> = root): NodeType<T> | false => {
-		const comparison = compareFn!(value, node.element);
-		if (comparison === 0) return node;
-		if (comparison === -1 && node.left) return searchNode(value, node.left);
-		if (comparison === 1 && node.right) return searchNode(value, node.right);
-		return false;
-	};
-
-	const add = (element: T) => addNode(element);
-	const remove = (element: T) => deleteNode(element);
-	const search = (element: T) => (searchNode(element) ? true : false);
+	const add = (element: T) => addNode(element, root, compareFn!);
+	const remove = (element: T) => deleteNode(element, root, root, compareFn!);
+	const search = (element: T) => (searchNode(element, root, compareFn!) ? true : false);
 	const height = (rootNode: NodeType<T> = root) => treeHeight(rootNode);
 	const min = (node: NodeType<T> = root): T => leftMostElement(node);
 	const max = (node: NodeType<T> = root): T => rightMostElement(node);
