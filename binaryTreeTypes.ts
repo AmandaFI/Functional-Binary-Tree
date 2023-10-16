@@ -1,6 +1,7 @@
 export type ChildSideType = "left" | "right";
 export type OrderType = "Inorder" | "Preorder" | "Postorder";
 export type NodeKindType = "Leaf" | "OneChild" | "BothChildren";
+export type RotationType = "LL" | "RR" | "LR" | "RL";
 
 export type NodeType<T extends {}> = {
 	element: T;

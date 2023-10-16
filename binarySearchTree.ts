@@ -46,7 +46,7 @@ const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnTyp
 	const filter = (fn: FilterFnType<T>, order: OrderType = "Inorder") => filterTree(fn, root, order);
 	const reduce = (fn: ReduceFnType<T>, acc: any) => reduceTree(fn, acc, root);
 	const forEach = (fn: ForEachFnType<T>) => forEachElement(fn, root);
-	const pyramidDisplpay = () => displayTreePyramid(root);
+	const pyramidDisplay = () => displayTreePyramid(root);
 
 	return {
 		root,
@@ -63,7 +63,7 @@ const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnTyp
 		filter,
 		reduce,
 		forEach,
-		pyramidDisplpay,
+		pyramidDisplpay: pyramidDisplay,
 	};
 };
 
@@ -80,29 +80,29 @@ export { binarySearchTree };
 const tree = binarySearchTree(6);
 tree.add(4);
 tree.add(3);
-// tree.add(4);
-// tree.add(3);
-// tree.add(9);
-// tree.add(8);
-// tree.add(13);
-// tree.add(18);
-
-// let b = tree.inorderPredecessor(tree.root.left!.right!);
-// console.log(b ? b.element : "no");
-tree.remove(6);
-tree.pyramidDisplpay();
-
-tree.add(2);
-tree.add(1);
+tree.add(4);
+tree.add(3);
+tree.add(9);
 tree.add(8);
+tree.add(13);
+tree.add(18);
 
-// let a = tree.lowestCommonAncestor(1, 23);
-// const a = tree.lowestCommonAncestor(4, 6);
-// const a = tree.lowestCommonAncestor(3, 4);
-// const a = tree.lowestCommonAncestor(2, 4);
-// const a = tree.lowestCommonAncestor(3, 189);
+// // let b = tree.inorderPredecessor(tree.root.left!.right!);
+// // console.log(b ? b.element : "no");
+// tree.remove(6);
+// tree.pyramidDisplpay();
 
-// console.log(a ? a.element : "no");
+// tree.add(2);
+// tree.add(1);
+// tree.add(8);
+
+// // let a = tree.lowestCommonAncestor(1, 23);
+// // const a = tree.lowestCommonAncestor(4, 6);
+// // const a = tree.lowestCommonAncestor(3, 4);
+// // const a = tree.lowestCommonAncestor(2, 4);
+// // const a = tree.lowestCommonAncestor(3, 189);
+
+// // console.log(a ? a.element : "no");
 
 tree.pyramidDisplpay();
 
@@ -123,4 +123,4 @@ tree.pyramidDisplpay();
 
 // // // console.log(tree.validate(tree.root.right!));
 // // tree.remove(10);
-console.log(tree.traverse());
+// console.log(tree.traverse());

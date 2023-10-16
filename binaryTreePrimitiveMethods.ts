@@ -12,10 +12,28 @@ export const createNode = <T extends {}>(
 	element: T,
 	parent: NodeType<T> | null = null,
 	parentSide: ChildSideType | null = null
-) => {
+): NodeType<T> => {
 	const level = parent ? parent.level + 1 : 0;
 	const levelPosition = !parent ? 1 : parentSide === "left" ? 2 * parent.levelPosition - 1 : 2 * parent.levelPosition;
 	return { element, left: null, right: null, parent, level, levelPosition, parentSide };
+};
+
+export const editNode = <T extends {}>(
+	node: NodeType<T>,
+	element: T,
+	leftChild: NodeType<T> | null,
+	rightChild: NodeType<T> | null,
+	parent?: NodeType<T>
+) => {
+	node.element = element;
+	node.left = leftChild;
+	node.right = rightChild;
+	node.parent = parent === undefined ? node.parent : parent;
+};
+
+export const editNodePosition = <T extends {}>(node: NodeType<T>, level: number, levelPosition: number) => {
+	node.level = level;
+	node.levelPosition = levelPosition;
 };
 
 export const isLeaf = <T extends {}>(node: NodeType<T>) => !node.left && !node.right;

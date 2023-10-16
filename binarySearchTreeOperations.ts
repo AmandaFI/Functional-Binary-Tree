@@ -9,17 +9,33 @@ import {
 } from "./binaryTreePrimitiveMethods";
 import { CompareFnType, NodeType } from "./binaryTreeTypes";
 
-export const addNode = <T extends {}>(element: T, node: NodeType<T>, compareFn: CompareFnType<T>) => {
+export const addNode = <T extends {}>(element: T, node: NodeType<T>, compareFn: CompareFnType<T>): NodeType<T> => {
 	const comparison = compareFn(element, node.element);
-	if (comparison === 0) return;
+	if (comparison === 0) return node;
 	else if (comparison === -1)
-		node.left ? addNode(element, node.left, compareFn) : (node.left = createNode(element, node, "left"));
-	else node.right ? addNode(element, node.right, compareFn) : (node.right = createNode(element, node, "right"));
+		if (node.left) return addNode(element, node.left, compareFn);
+		else {
+			const newNode = createNode(element, node, "left");
+			node.left = newNode;
+			return newNode;
+		}
+	else {
+		if (node.right) return addNode(element, node.right, compareFn);
+		else {
+			const newNode = createNode(element, node, "right");
+			node.right = newNode;
+			return newNode;
+		}
+	}
 };
+
+// node.left ? addNode(element, node.left, compareFn) : (node.left = createNode(element, node, "left"));
+// node.right ? addNode(element, node.right, compareFn) : (node.right = createNode(element, node, "right"));
 
 export const deleteLeafNode = <T extends {}>(element: T, parent: NodeType<T> | null) => {
 	if (!parent) throw new Error("Root deletion not allowed.");
 	parent.left?.element === element ? (parent.left = null) : (parent.right = null);
+	return parent;
 };
 
 export const deleteNodeWithOnlyChild = <T extends {}>(node: NodeType<T>, parent: NodeType<T> | null, root: NodeType<T>) => {
@@ -30,6 +46,7 @@ export const deleteNodeWithOnlyChild = <T extends {}>(node: NodeType<T>, parent:
 
 	if (!parent) replaceRoot(root, replacer);
 	else connectNodes(parent, replacer, parent.left?.element === node.element ? "left" : "right");
+	return replacer;
 };
 
 export const deleteNodeWithBothChildren = <T extends {}>(
