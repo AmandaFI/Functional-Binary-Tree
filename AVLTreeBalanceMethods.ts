@@ -1,7 +1,7 @@
 // https://en.wikipedia.org/wiki/AVL_tree
 // https://www.enjoyalgorithms.com/blog/avl-tree-data-structure
 
-import { createNode, editNode, editNodePosition, treeHeight } from "./binaryTreePrimitiveMethods";
+import { createNode, editNode, editNodePosition, treeHeight, updateSubtreeLevels } from "./binaryTreePrimitiveMethods";
 import { NodeType, RotationType } from "./binaryTreeTypes";
 
 export const calculateBalanceFactor = <T extends {}>(node: NodeType<T> | null) => {
@@ -12,11 +12,15 @@ export const calculateBalanceFactor = <T extends {}>(node: NodeType<T> | null) =
 export const isBalanced = <T extends {}>(node: NodeType<T> | null) => {
 	const balanceFactor = calculateBalanceFactor(node);
 	if (balanceFactor === -1 || balanceFactor === 0 || balanceFactor === 1) return true;
+	console.log(`Imbalance: ${balanceFactor}`);
 	return false;
 };
 
 export const choseRotation = <T extends {}>(node: NodeType<T>): RotationType => {
 	const balanceFactor = calculateBalanceFactor(node);
+	console.log("Choosing rotation");
+	// console.log(node.parent);
+	//if (node.parent === null) return balanceFactor > 0 ? "LR" : "RL";
 	if (node.parentSide === "right") {
 		if (balanceFactor >= 0) return "RR";
 		return "RL";
@@ -26,10 +30,33 @@ export const choseRotation = <T extends {}>(node: NodeType<T>): RotationType => 
 	}
 };
 
+// recebendo o node desbalanceado
+export const choseRotation2 = <T extends {}>(node: NodeType<T>): RotationType => {
+	const balanceFactor = calculateBalanceFactor(node);
+	console.log("Choosing rotation 2");
+	if (balanceFactor > 1 && calculateBalanceFactor(node.left) >= 0) return "RR";
+	else if (balanceFactor < -1 && calculateBalanceFactor(node.right) <= 0) return "LL";
+	else if (balanceFactor > 1 && calculateBalanceFactor(node.left) < 0) return "LR";
+	else if (balanceFactor < -1 && calculateBalanceFactor(node.left) > 0) return "RL";
+	else throw new Error("Unknonw rotation.");
+};
+
+export const checkAncestorsBalance2 = <T extends {}>(node: NodeType<T> | null) => {
+	while (node !== null) {
+		console.log(`Checking node ${node.element}`);
+		if (!isBalanced(node)) {
+			console.log(`Node ${node.element} needs balance`);
+			balance(node, true);
+		}
+		node = node.parent;
+	}
+};
+
 export const checkAncestorsBalance = <T extends {}>(node: NodeType<T>) => {
 	while (node.parent !== null) {
+		console.log(`Checking node ${node.parent.element}`);
 		if (!isBalanced(node.parent)) {
-			console.log(`Node ${node.parent.element} needs balance`);
+			console.log(`Node ${node.element} needs balance`);
 			balance(node);
 		}
 		node = node.parent;
@@ -42,14 +69,32 @@ export const checkAncestorsBalance = <T extends {}>(node: NodeType<T>) => {
 //     /
 //   10
 // LL   --> This function receives the "center" node, in the example node 20
-export const rotateRight = <T extends {}>({ element, parent, left: leftChild, levelPosition }: NodeType<T>) => {
+export const rotateRight = <T extends {}>(node: NodeType<T> | null) => {
+	if (node === null) throw new Error("Impossible to perform rotation LL with null node.");
+
+	const { element, parent, left: leftChild, levelPosition } = node;
+	console.log(`Received node ${element} to rotate LL.`);
+
 	if (!parent) throw new Error("Impossible to execute LL rotation.");
 	const rightChild = createNode(parent.element, parent, "right");
+	rightChild.left = node.right;
+
+	if (parent.right) {
+		rightChild.right = parent.right;
+		parent.right.parent = rightChild;
+		parent.right.parentSide = "right";
+		updateSubtreeLevels(parent.right, rightChild.level + 1, 2 * rightChild.levelPosition);
+	}
+
+	if (node.right) {
+		node.right.parent = rightChild;
+		editNodePosition(node.right, rightChild.level + 1, 2 * rightChild.levelPosition - 1, "left");
+	}
 	editNode(parent, element, leftChild, rightChild);
 
 	if (leftChild) {
 		leftChild.parent = parent;
-		editNodePosition(leftChild, leftChild.level - 1, levelPosition);
+		updateSubtreeLevels(leftChild, leftChild.level - 1, 2 * parent.levelPosition - 1);
 	}
 };
 
@@ -59,14 +104,33 @@ export const rotateRight = <T extends {}>({ element, parent, left: leftChild, le
 //          \
 //           30
 // RR   --> This function receives the "center" node, in the example node 20
-export const rotateLeft = <T extends {}>({ element, parent, right: rightChild, levelPosition }: NodeType<T>) => {
+export const rotateLeft = <T extends {}>(node: NodeType<T> | null) => {
+	if (node === null) throw new Error("Impossible to perform rotation RR with null node.");
+
+	const { element, parent, right: rightChild, levelPosition } = node;
+	console.log(`Received node ${element} to rotate RR.`);
+
 	if (!parent) throw new Error("Impossible to execute RR rotation.");
 	const leftChild = createNode(parent.element, parent, "left");
+	leftChild.right = node.left;
+
+	if (parent.left) {
+		leftChild.left = parent.left;
+		parent.left.parent = leftChild;
+		parent.left.parentSide = "left";
+		updateSubtreeLevels(parent.left, leftChild.level + 1, 2 * leftChild.levelPosition - 1);
+	}
+
+	if (node.left) {
+		node.left.parent = leftChild;
+		editNodePosition(node.left, leftChild.level + 1, 2 * leftChild.levelPosition, "right");
+	}
 	editNode(parent, element, leftChild, rightChild);
 
 	if (rightChild) {
 		rightChild.parent = parent;
-		editNodePosition(rightChild, rightChild.level - 1, levelPosition);
+		updateSubtreeLevels(rightChild, parent.level + 1, 2 * parent.levelPosition);
+		//editNodePosition(rightChild, parent.level + 1, 2 * parent.levelPosition, "right");
 	}
 };
 //     30               30                20
@@ -75,7 +139,11 @@ export const rotateLeft = <T extends {}>({ element, parent, right: rightChild, l
 //     \              /
 //      20          10
 // LR --> This function receives the "center" node, in the example node 10 from the first tree
-export const rotateLeftRight = <T extends {}>(node: NodeType<T>) => {
+export const rotateLeftRight = <T extends {}>(node: NodeType<T> | null) => {
+	if (node === null) throw new Error("Impossible to perform rotation LR with null node.");
+
+	console.log(`Received node ${node.element} to rotate LR.`);
+
 	rotateLeft(node.right!);
 	rotateRight(node);
 };
@@ -86,26 +154,29 @@ export const rotateLeftRight = <T extends {}>(node: NodeType<T>) => {
 //     /                  \
 //   20                   30
 // RL --> This function receives the "center" node, in the example node 30 from the first tree
-export const rotateRightLeft = <T extends {}>(node: NodeType<T>) => {
+export const rotateRightLeft = <T extends {}>(node: NodeType<T> | null) => {
+	if (node === null) throw new Error("Impossible to perform rotation RL with null node.");
+	console.log(`Received node ${node.element} to rotate RL.`);
+
 	rotateRight(node.left!);
 	rotateLeft(node);
 };
 
-export const balance = <T extends {}>(node: NodeType<T>) => {
-	const rotation = choseRotation(node);
+export const balance = <T extends {}>(node: NodeType<T>, deleteMode = false) => {
+	const rotation = deleteMode ? choseRotation2(node) : choseRotation(node);
 	console.log(`Executing ${rotation} rotation...`);
 	switch (rotation) {
 		case "LL":
-			rotateRight(node);
+			deleteMode ? rotateRight(node.left) : rotateRight(node);
 			break;
 		case "RL":
-			rotateRightLeft(node);
+			deleteMode ? rotateRightLeft(node.left) : rotateRightLeft(node);
 			break;
 		case "RR":
-			rotateLeft(node);
+			deleteMode ? rotateLeft(node.right) : rotateLeft(node);
 			break;
 		case "LR":
-			rotateLeftRight(node);
+			deleteMode ? rotateLeftRight(node.right) : rotateLeftRight(node);
 			break;
 		default:
 			throw new Error("Unknown rotation type.");
