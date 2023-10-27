@@ -44,9 +44,11 @@ export const deleteNodeWithOnlyChild = <T extends {}>(node: NodeType<T>, parent:
 
 	updateSubtreeLevels(replacer!, node.level, node.levelPosition);
 
-	if (!parent) replaceRoot(root, replacer);
-	else connectNodes(parent, replacer, parent.left?.element === node.element ? "left" : "right");
-	return replacer;
+	if (!parent) {
+		replaceRoot(root, replacer);
+		return root;
+	} else connectNodes(parent, replacer, parent.left?.element === node.element ? "left" : "right");
+	return parent;
 };
 
 export const deleteNodeWithBothChildren = <T extends {}>(

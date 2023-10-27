@@ -31,7 +31,12 @@ export const editNode = <T extends {}>(
 	node.parent = parent === undefined ? node.parent : parent;
 };
 
-export const editNodePosition = <T extends {}>(node: NodeType<T>, level: number, levelPosition: number) => {
+export const editNodePosition = <T extends {}>(
+	node: NodeType<T>,
+	level: number,
+	levelPosition: number,
+	parentSide: ChildSideType
+) => {
 	node.level = level;
 	node.levelPosition = levelPosition;
 };
