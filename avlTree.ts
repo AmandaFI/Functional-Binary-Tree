@@ -40,7 +40,7 @@ const AVLTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => 
 		return parent;
 	};
 
-	const deleteNodeWithOnlyChild = (node: NodeType<T>, parent: NodeType<T> | null, root: NodeType<T>) => {
+	const deleteNodeWithOnlyChild = (node: NodeType<T>, parent: NodeType<T> | null, root: NodeType<T>): NodeType<T> => {
 		const replacer = node.left ? node.left : node.right;
 		if (!replacer) throw new Error("No replacer.");
 
@@ -58,48 +58,68 @@ const AVLTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => 
 		parent: NodeType<T> | null,
 		root: NodeType<T>,
 		compareFn: CompareFnType<T>
-	) => {
+	): NodeType<T> => {
 		const replacer = inorderSuccessor(node);
 		if (!replacer) throw new Error("Node with two children without parent.");
 
 		deleteNode(replacer.element, root, root, compareFn);
-		if (!parent) root.element = replacer.element;
-		else parent.left === node ? (parent.left.element = replacer.element) : (parent.right!.element = replacer.element);
+		if (!parent) {
+			root.element = replacer.element;
+			return root;
+		} else {
+			if (parent.left === node) {
+				parent.left.element = replacer.element;
+				return parent.left;
+			} else {
+				parent.right!.element = replacer.element;
+				return parent.right!;
+			}
+		}
 	};
 
 	// ---------------------------------------------------------------------------------
 
-	const deleteNode = (element: T, node: NodeType<T> | null, root: NodeType<T>, compareFn: CompareFnType<T>): boolean => {
-		if (!node) return false;
+	const deleteNode = (
+		element: T,
+		node: NodeType<T> | null,
+		root: NodeType<T>,
+		compareFn: CompareFnType<T>
+	): NodeType<T> | null => {
+		if (!node) return null;
 		if (element === root.element && isLeaf(root)) throw new Error("Root deletion not allowed.");
-
+		let rNode: NodeType<T> | null = null;
 		if (node.element === element) {
 			if (isLeaf(node)) {
-				const deletedNodeParent = deleteLeafNode(element, node.parent);
-				console.log(`Deleted Node parent: ${deletedNodeParent.element}`);
-				checkAncestorsBalance2(deletedNodeParent);
-				//checkAncestorsBalance(deletedNodeParent);
+				//console.log(`Deleted Node parent: ${rNode.element}`);
+				return deleteLeafNode(element, node.parent);
+				//const deletedNodeParent = deleteLeafNode(element, node.parent);
+				//checkAncestorsBalance2(deletedNodeParent);
 			} else if (hasBothChildren(node)) {
 				console.log(`Deleted Node two children`);
-
-				deleteNodeWithBothChildren(node, node.parent, root, compareFn);
-				// checkAncestorsBalance(node.parent!);
+				return deleteNodeWithBothChildren(node, node.parent, root, compareFn);
+				//const replacedNode = deleteNodeWithBothChildren(node, node.parent, root, compareFn);
+				//checkAncestorsBalance2(replacedNode);
 			} else {
-				const removedNodeParent = deleteNodeWithOnlyChild(node, node.parent, root);
-				console.log(`Deleted Node parent: ${removedNodeParent.element}`);
+				//console.log(`Deleted Node parent: ${rNode.element}`);
+				return deleteNodeWithOnlyChild(node, node.parent, root);
+				//const removedNodeParent = deleteNodeWithOnlyChild(node, node.parent, root);
 
-				checkAncestorsBalance2(removedNodeParent);
-				//checkAncestorsBalance(removedNodeParent);
+				//checkAncestorsBalance2(removedNodeParent);
 			}
-			//checkAncestorsBalance(node);
-			return true;
+			//checkAncestorsBalance2(rNode);
+			//return true;
 		}
 		if (compareFn!(element, node.element) === -1) return deleteNode(element, node.left, root, compareFn);
 		else if (compareFn!(element, node.element) === 1) return deleteNode(element, node.right, root, compareFn);
-		return false;
+		return null;
 	};
 
-	const remove = (element: T) => deleteNode(element, root, root, compareFn!);
+	const remove = (element: T) => {
+		const x = deleteNode(element, root, root, compareFn!);
+		pyramidDisplay();
+		if (x !== null) checkAncestorsBalance2(x);
+		else console.log("ERRO NA DELEÇÃO");
+	};
 	const search = (element: T) => (searchNode(element, root, compareFn!) ? true : false);
 	const height = (rootNode: NodeType<T> = root) => treeHeight(rootNode);
 	const min = (node: NodeType<T> = root): T => leftMostElement(node);
@@ -115,20 +135,55 @@ const AVLTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => 
 	return { root, add, pyramid: displayTreePyramid, remove };
 };
 
-const tree = AVLTree(50);
-tree.add(40);
+const tree = AVLTree(2);
+tree.add(1);
+tree.add(3);
+tree.add(4);
+tree.pyramid(tree.root);
+tree.add(5);
+tree.add(6);
+tree.add(7);
+tree.add(8);
 
-tree.add(60);
-tree.add(30);
-tree.add(45);
-tree.add(55);
-tree.add(10);
-
+// tree.remove(10);
 tree.pyramid(tree.root);
 
-tree.remove(55);
+// const tree = AVLTree(30);
+// tree.add(10);
+// tree.add(50);
+// tree.add(6);
+// tree.add(18);
+// tree.add(45);
+// tree.add(58);
 
-tree.pyramid(tree.root);
+// tree.add(5);
+// tree.add(8);
+// tree.add(15);
+// tree.add(47);
+// tree.add(65);
+// tree.add(7);
+// tree.add(9);
+
+// tree.pyramid(tree.root);
+
+// tree.remove(10);
+
+// tree.pyramid(tree.root);
+
+// const tree = AVLTree(50);
+// tree.add(40);
+
+// tree.add(60);
+// tree.add(30);
+// tree.add(45);
+// tree.add(55);
+// tree.add(10);
+
+// tree.pyramid(tree.root);
+
+// tree.remove(55);
+
+// tree.pyramid(tree.root);
 
 // const tree = AVLTree(20);
 // console.log(tree.root.element);
