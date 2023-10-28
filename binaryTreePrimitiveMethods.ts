@@ -31,16 +31,6 @@ export const editNode = <T extends {}>(
 	node.parent = parent === undefined ? node.parent : parent;
 };
 
-export const editNodePosition = <T extends {}>(
-	node: NodeType<T>,
-	level: number,
-	levelPosition: number,
-	parentSide: ChildSideType
-) => {
-	node.level = level;
-	node.levelPosition = levelPosition;
-};
-
 export const isLeaf = <T extends {}>(node: NodeType<T>) => !node.left && !node.right;
 export const hasBothChildren = <T extends {}>(node: NodeType<T>) => (node.left && node.right ? true : false);
 export const hasOnlyChild = <T extends {}>(node: NodeType<T>) => !isLeaf(node) && !hasBothChildren(node);
@@ -98,6 +88,7 @@ export const replaceRoot = <T extends {}>(root: NodeType<T>, replacer: NodeType<
 
 export const connectNodes = <T extends {}>(parent: NodeType<T>, child: NodeType<T>, childPosition: ChildSideType) => {
 	child.parent = parent;
+	child.parentSide = childPosition;
 	parent[childPosition] = child;
 };
 

@@ -28,6 +28,7 @@ const AVLTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => 
 		const removedReplacer = deleteNode(element, root, root, compareFn!);
 		if (removedReplacer !== false) checkAncestorsBalance(removedReplacer);
 	};
+
 	const search = (element: T) => (searchNode(element, root, compareFn!) ? true : false);
 	const height = (rootNode: NodeType<T> = root) => treeHeight(rootNode);
 	const min = (node: NodeType<T> = root): T => leftMostElement(node);
@@ -40,21 +41,36 @@ const AVLTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => 
 	const forEach = (fn: ForEachFnType<T>) => forEachElement(fn, root);
 	const pyramidDisplay = () => displayTreePyramid(root);
 
-	return { root, add, pyramid: displayTreePyramid, remove };
+	return {
+		root,
+		add,
+		pyramidDisplay,
+		remove,
+		search,
+		height,
+		min,
+		max,
+		display,
+		traverse,
+		map,
+		filter,
+		reduce,
+		forEach,
+	};
 };
 
 const tree = AVLTree(2);
 tree.add(1);
 tree.add(3);
 tree.add(4);
-tree.pyramid(tree.root);
+tree.pyramidDisplay();
 tree.add(5);
 tree.add(6);
 tree.add(7);
 tree.add(8);
 
 // tree.remove(10);
-tree.pyramid(tree.root);
+tree.pyramidDisplay();
 
 // const tree = AVLTree(30);
 // tree.add(10);
@@ -72,11 +88,11 @@ tree.pyramid(tree.root);
 // tree.add(7);
 // tree.add(9);
 
-// tree.pyramid(tree.root);
+// tree.pyramidDisplay();
 
 // tree.remove(10);
 
-// tree.pyramid(tree.root);
+// tree.pyramidDisplay();
 
 // const tree = AVLTree(50);
 // tree.add(40);
@@ -87,18 +103,18 @@ tree.pyramid(tree.root);
 // tree.add(55);
 // tree.add(10);
 
-// tree.pyramid(tree.root);
+// tree.pyramidDisplay();
 
 // tree.remove(55);
 
-// tree.pyramid(tree.root);
+// tree.pyramidDisplay();
 
 // const tree = AVLTree(20);
 // console.log(tree.root.element);
 // console.log(tree.root.parent);
 
 // tree.add(10);
-// // tree.pyramid(tree.root);
+// // tree.pyramidDisplay();
 
 // tree.add(30);
 
@@ -106,10 +122,10 @@ tree.pyramid(tree.root);
 
 // tree.add(15);
 
-// tree.pyramid(tree.root);
+// tree.pyramidDisplay();
 // console.log("befor deletion");
 // tree.remove(30);
 // console.log("------------------------------after deletion");
 
-// tree.pyramid(tree.root);
+// tree.pyramidDisplay();
 // // console.log(tree.root.left!);
