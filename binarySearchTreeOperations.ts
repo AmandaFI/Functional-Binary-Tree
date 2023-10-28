@@ -29,10 +29,7 @@ export const addNode = <T extends {}>(element: T, node: NodeType<T>, compareFn: 
 	}
 };
 
-// node.left ? addNode(element, node.left, compareFn) : (node.left = createNode(element, node, "left"));
-// node.right ? addNode(element, node.right, compareFn) : (node.right = createNode(element, node, "right"));
-
-export const deleteLeafNode = <T extends {}>(element: T, parent: NodeType<T> | null) => {
+export const deleteLeafNode = <T extends {}>(element: T, parent: NodeType<T> | null): NodeType<T> => {
 	if (!parent) throw new Error("Root deletion not allowed.");
 	parent.left?.element === element ? (parent.left = null) : (parent.right = null);
 	return parent;
@@ -56,13 +53,23 @@ export const deleteNodeWithBothChildren = <T extends {}>(
 	parent: NodeType<T> | null,
 	root: NodeType<T>,
 	compareFn: CompareFnType<T>
-) => {
+): NodeType<T> => {
 	const replacer = inorderSuccessor(node);
 	if (!replacer) throw new Error("Node with two children without parent.");
 
 	deleteNode(replacer.element, root, root, compareFn);
-	if (!parent) root.element = replacer.element;
-	else parent.left === node ? (parent.left.element = replacer.element) : (parent.right!.element = replacer.element);
+	if (!parent) {
+		root.element = replacer.element;
+		return root;
+	} else {
+		if (parent.left === node) {
+			parent.left.element = replacer.element;
+			return parent.left;
+		} else {
+			parent.right!.element = replacer.element;
+			return parent.right!;
+		}
+	}
 };
 
 export const deleteNode = <T extends {}>(
@@ -70,15 +77,14 @@ export const deleteNode = <T extends {}>(
 	node: NodeType<T> | null,
 	root: NodeType<T>,
 	compareFn: CompareFnType<T>
-): boolean => {
+): NodeType<T> | false => {
 	if (!node) return false;
 	if (element === root.element && isLeaf(root)) throw new Error("Root deletion not allowed.");
 
 	if (node.element === element) {
-		if (isLeaf(node)) deleteLeafNode(element, node.parent);
-		else if (hasBothChildren(node)) deleteNodeWithBothChildren(node, node.parent, root, compareFn);
-		else deleteNodeWithOnlyChild(node, node.parent, root);
-		return true;
+		if (isLeaf(node)) return deleteLeafNode(element, node.parent);
+		else if (hasBothChildren(node)) return deleteNodeWithBothChildren(node, node.parent, root, compareFn);
+		else return deleteNodeWithOnlyChild(node, node.parent, root);
 	}
 	if (compareFn!(element, node.element) === -1) return deleteNode(element, node.left, root, compareFn);
 	else if (compareFn!(element, node.element) === 1) return deleteNode(element, node.right, root, compareFn);

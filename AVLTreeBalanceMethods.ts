@@ -16,20 +16,6 @@ export const isBalanced = <T extends {}>(node: NodeType<T> | null) => {
 	return false;
 };
 
-// export const choseRotation = <T extends {}>(node: NodeType<T>): RotationType => {
-// 	const balanceFactor = calculateBalanceFactor(node);
-// 	console.log("Choosing rotation");
-// 	// console.log(node.parent);
-// 	//if (node.parent === null) return balanceFactor > 0 ? "LR" : "RL";
-// 	if (node.parentSide === "right") {
-// 		if (balanceFactor >= 0) return "RR";
-// 		return "RL";
-// 	} else {
-// 		if (balanceFactor <= 0) return "LL";
-// 		return "LR";
-// 	}
-// };
-
 export const choseRotation = <T extends {}>(node: NodeType<T>): RotationType | null => {
 	const balanceFactor = calculateBalanceFactor(node);
 	console.log("Choosing rotation");
@@ -44,50 +30,12 @@ export const choseRotation = <T extends {}>(node: NodeType<T>): RotationType | n
 	} else return null;
 };
 
-// recebendo o node desbalanceado
-// export const choseRotation2 = <T extends {}>(node: NodeType<T>): RotationType => {
-// 	const balanceFactor = calculateBalanceFactor(node);
-// 	console.log("Choosing rotation 2");
-// 	console.log(calculateBalanceFactor(node.left));
-// 	console.log(calculateBalanceFactor(node.right));
-
-// 	if (balanceFactor > 1 && calculateBalanceFactor(node.left) >= 0) return "RR";
-// 	else if (balanceFactor > 1 && calculateBalanceFactor(node.left) < 0) return "RL";
-// 	else if (balanceFactor < -1 && calculateBalanceFactor(node.right) <= 0) return "LL";
-// 	else if (balanceFactor < -1 && calculateBalanceFactor(node.right) > 0) return "LR";
-// 	else throw new Error("Unknonw rotation.");
-// };
-
-export const choseRotation2 = <T extends {}>(node: NodeType<T>): RotationType | null => {
-	const balanceFactor = calculateBalanceFactor(node);
-	console.log("Choosing rotation");
-	console.log(`Calculated balane: ${balanceFactor}`);
-	if (balanceFactor > 1) {
-		if (calculateBalanceFactor(node.left) === 1) return "LL";
-		return "LR";
-	} else if (balanceFactor < -1) {
-		if (calculateBalanceFactor(node.right) === -1) return "RR";
-		return "RL";
-	} else return null;
-};
-
-export const checkAncestorsBalance2 = <T extends {}>(node: NodeType<T> | null) => {
+export const checkAncestorsBalance = <T extends {}>(node: NodeType<T> | null) => {
 	while (node !== null) {
 		console.log(`Checking node ${node.element}`);
 		if (!isBalanced(node)) {
 			console.log(`Node ${node.element} needs balance`);
-			balance(node, true);
-		}
-		node = node.parent;
-	}
-};
-
-export const checkAncestorsBalance = <T extends {}>(node: NodeType<T>) => {
-	while (node.parent !== null) {
-		console.log(`Checking node ${node.parent.element}`);
-		if (!isBalanced(node.parent)) {
-			console.log(`Node ${node.element} needs balance`);
-			balance(node.parent);
+			balance(node);
 		}
 		node = node.parent;
 	}
@@ -192,29 +140,8 @@ export const rotateRightLeft = <T extends {}>(node: NodeType<T> | null) => {
 	rotateLeft(node);
 };
 
-// export const balance = <T extends {}>(node: NodeType<T>, deleteMode = false) => {
-// 	const rotation = deleteMode ? choseRotation2(node) : choseRotation(node);
-// 	console.log(`Executing ${rotation} rotation...`);
-// 	switch (rotation) {
-// 		case "LL":
-// 			deleteMode ? rotateRight(node.left) : rotateRight(node);
-// 			break;
-// 		case "RL":
-// 			deleteMode ? rotateRightLeft(node.left) : rotateRightLeft(node);
-// 			break;
-// 		case "RR":
-// 			deleteMode ? rotateLeft(node.right) : rotateLeft(node);
-// 			break;
-// 		case "LR":
-// 			deleteMode ? rotateLeftRight(node.right) : rotateLeftRight(node);
-// 			break;
-// 		default:
-// 			throw new Error("No rotation needed.");
-// 	}
-// };
-
-export const balance = <T extends {}>(node: NodeType<T>, deleteMode = false) => {
-	const rotation = deleteMode ? choseRotation2(node) : choseRotation(node);
+export const balance = <T extends {}>(node: NodeType<T>) => {
+	const rotation = choseRotation(node);
 	console.log(`Executing ${rotation} rotation...`);
 	switch (rotation) {
 		case "LL":
