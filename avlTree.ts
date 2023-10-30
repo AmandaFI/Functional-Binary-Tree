@@ -59,18 +59,33 @@ const AVLTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => 
 	};
 };
 
-const tree = AVLTree(2);
-tree.add(1);
+const tree = AVLTree(10);
+tree.add(5);
+tree.pyramidDisplay();
 tree.add(3);
+tree.pyramidDisplay();
+tree.add(1);
+tree.pyramidDisplay();
+tree.add(2);
+tree.pyramidDisplay();
 tree.add(4);
 tree.pyramidDisplay();
-tree.add(5);
-tree.add(6);
-tree.add(7);
-tree.add(8);
-
-// tree.remove(10);
+tree.add(15);
 tree.pyramidDisplay();
+tree.add(19);
+tree.pyramidDisplay();
+// const tree = AVLTree(2);
+// tree.add(1);
+// tree.add(3);
+// tree.add(4);
+// tree.pyramidDisplay();
+// tree.add(5);
+// tree.add(6);
+// tree.add(7);
+// tree.add(8);
+
+// // tree.remove(10);
+// tree.pyramidDisplay();
 
 // const tree = AVLTree(30);
 // tree.add(10);
