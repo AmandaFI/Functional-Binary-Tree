@@ -4,17 +4,16 @@
 import { connectNodes, createNode, editNode, treeHeight, updateSubtreeLevels } from "./binaryTreePrimitiveMethods";
 import { NodeType, RotationType } from "./binaryTreeTypes";
 
+const BALANCE_FACTOR = 1;
+
 // balanceFactor = left - right
 export const calculateBalanceFactor = <T extends {}>(node: NodeType<T> | null) => {
 	if (!node) return 0;
 	return treeHeight(node.left) - treeHeight(node.right);
 };
 
-export const isBalanced = <T extends {}>(node: NodeType<T> | null) => {
-	const balanceFactor = calculateBalanceFactor(node);
-	if (balanceFactor === -1 || balanceFactor === 0 || balanceFactor === 1) return true;
-	return false;
-};
+export const isBalanced = <T extends {}>(node: NodeType<T> | null) => Math.abs(calculateBalanceFactor(node)) <= BALANCE_FACTOR;
+// return (balanceFactor === -1 || balanceFactor === 0 || balanceFactor === 1)
 
 export const checkAncestorsBalance = <T extends {}>(node: NodeType<T> | null) => {
 	while (node !== null) {

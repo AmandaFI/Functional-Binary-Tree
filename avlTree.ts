@@ -29,7 +29,7 @@ const AVLTree = <T extends {}>(rootElement: T, compareFn?: CompareFnType<T>) => 
 		if (removedReplacer !== false) checkAncestorsBalance(removedReplacer);
 	};
 
-	const search = (element: T) => (searchNode(element, root, compareFn!) ? true : false);
+	const search = (element: T) => !!searchNode(element, root, compareFn!);
 	const height = (rootNode: NodeType<T> = root) => treeHeight(rootNode);
 	const min = (node: NodeType<T> = root): T => leftMostElement(node);
 	const max = (node: NodeType<T> = root): T => rightMostElement(node);
