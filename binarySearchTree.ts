@@ -55,6 +55,7 @@ const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnTyp
 	const smallerThanOrEqualTo = (element: T) => elementsSmallerThanOrEqualTo(element, root, compareFn!)
 	const greaterThan = (element: T) => elementsGreaterThan(element, root, compareFn!)
 	const greaterThanOrEqualTo = (element: T) => elementsGreaterThanOrEqualTo(element, root, compareFn!)
+	// between inclusion variations on binaryTreePrimitiveMethods
 	const between = (leftElement: T, rightElement: T) => elementsBetween(leftElement, rightElement, root, compareFn!)
 	const pyramidDisplay = () => displayTreePyramid(root);
 
@@ -128,6 +129,8 @@ console.log(tree.greaterThan(6))
 console.log(tree.greaterThanOrEqualTo(6))
 
 console.log(tree.between(4, 13))
+// console.log(tree.between(4, 13, true, true))
+
 
 
 // function inorderSucessor(node: NodeType<T>) {

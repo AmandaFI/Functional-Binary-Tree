@@ -147,28 +147,50 @@ export const elementsGreaterThanOrEqualTo = <T extends {}>(value: T, node: NodeT
 	return elementsGreaterThan(value, node, compareFn, true)
 }
 
-export const elementsBetween = <T extends {}>(leftValue: T, rightValue: T, node: NodeType<T>, compareFn: CompareFnType<T>): Array<T> => {
-	const greatherThanLeft = elementsGreaterThan(leftValue, node, compareFn)
-	const smallerThanRight = elementsSmallerThan(rightValue, node, compareFn)
-	return greatherThanLeft.filter(el => smallerThanRight.includes(el));
+// export const elementsBetween = <T extends {}>(leftValue: T, rightValue: T, node: NodeType<T>, compareFn: CompareFnType<T>): Array<T> => {
+// 	const greatherThanLeft = elementsGreaterThan(leftValue, node, compareFn)
+// 	const smallerThanRight = elementsSmallerThan(rightValue, node, compareFn)
+// 	return greatherThanLeft.filter(el => smallerThanRight.includes(el));
+// }
+
+export const elementsBetween = <T extends {}>(leftValue: T, rightValue: T, node: NodeType<T>, compareFn: CompareFnType<T>, leftInclusive=false, rightInclusive=false): Array<T> => {
+	const leftValueComparison = compareFn(node.element, leftValue)
+	const rightValueComparison = compareFn(node.element, rightValue)
+
+	if (leftValueComparison === 0 && !leftInclusive) return []
+	if (rightValueComparison === 0 && !rightInclusive) return []
+
+	if (rightValueComparison === 1){
+		if (isLeaf(node) || !node.left) return []
+		return elementsBetween(leftValue, rightValue, node.left, compareFn, leftInclusive, rightInclusive)
+	}
+
+	else if (leftValueComparison === -1){
+		if (isLeaf(node) || !node.right) return []
+		return elementsBetween(leftValue, rightValue, node.right, compareFn, leftInclusive, rightInclusive)
+	}
+
+	else {
+		// cL === 1 e cR === -1
+		return [
+			...(node.left ? elementsBetween(leftValue, rightValue, node.left, compareFn, leftInclusive, rightInclusive) : []),
+			 node.element,
+			...(node.right ? elementsBetween(leftValue, rightValue, node.right, compareFn, leftInclusive, rightInclusive): [])
+		]
+	}
 }
 
-// export const elementsBetween = <T extends {}>(leftValue: T, rightValue: T, node: NodeType<T>, compareFn: CompareFnType<T>): Array<T> => {
-// 	const leftValueComparison = compareFn(node.element, leftValue)
-// 	const rightValueComparison = compareFn(node.element, rightValue)
+export const elementsBetweenLeftIncluded = <T extends {}>(leftValue: T, rightValue: T, node: NodeType<T>, compareFn: CompareFnType<T>, leftInclusive=false, rightInclusive=false): Array<T> =>{
+	return elementsBetween(leftValue, rightValue, node, compareFn, true, false)
+}
 
-// 	if (comparison === -1) {
-// 		if (isLeaf(node) || !node.right) return []
-// 		else return elementsGreaterThan(value, node.right, compareFn)
-// 	}
-// 	else if (comparison === 0) {
-// 		return node.right ? elementsGreaterThan(value, node.right, compareFn) : []
-// 	}
-// 	else {
-// 		// cL === 1 e cR === -1
-// 		return [...(node.left ? elementsGreaterThan(value, node.left, compareFn) : []), node.element, ...(node.right ? elementsGreaterThan(value, node.right, compareFn): [])]
-// 	}
-// }
+export const elementsBetweenRightIncluded = <T extends {}>(leftValue: T, rightValue: T, node: NodeType<T>, compareFn: CompareFnType<T>, leftInclusive=false, rightInclusive=false): Array<T> =>{
+	return elementsBetween(leftValue, rightValue, node, compareFn, false, true)
+}
+
+export const elementsBetweenIncluded = <T extends {}>(leftValue: T, rightValue: T, node: NodeType<T>, compareFn: CompareFnType<T>, leftInclusive=false, rightInclusive=false): Array<T> =>{
+	return elementsBetween(leftValue, rightValue, node, compareFn, true, true)
+}
 
 export const updateSubtreeLevels = <T extends {}>(node: NodeType<T>, newLevel: number, newLevelPosition: number) => {
 	if (!node) return;
