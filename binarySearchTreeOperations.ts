@@ -98,3 +98,5 @@ export const searchNode = <T extends {}>(value: T, node: NodeType<T>, compareFn:
 	if (comparison === 1 && node.right) return searchNode(value, node.right, compareFn);
 	return false;
 };
+
+

@@ -12,6 +12,9 @@ import {
 	displayTreePyramid,
 	treeHeight,
 	createNode,
+	elementsSmallerThan,
+	elementsGreaterThan,
+	elementsBetween
 } from "./binaryTreePrimitiveMethods";
 import { CompareFnType, FilterFnType, ForEachFnType, MapFnType, NodeType, OrderType, ReduceFnType } from "./binaryTreeTypes";
 import { filterTree, forEachElement, mapTree, reduceTree, traverseTree, visitElements } from "./binaryTreeIterationMethods";
@@ -46,6 +49,9 @@ const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnTyp
 	const filter = (fn: FilterFnType<T>, order: OrderType = "Inorder") => filterTree(fn, root, order);
 	const reduce = (fn: ReduceFnType<T>, acc: any) => reduceTree(fn, acc, root);
 	const forEach = (fn: ForEachFnType<T>) => forEachElement(fn, root);
+	const smallerThan = (element: T) => elementsSmallerThan(element, root, compareFn!);
+	const greaterThan = (element: T) => elementsGreaterThan(element, root, compareFn!)
+	const between = (leftElement: T, rightElement: T) => elementsBetween(leftElement, rightElement, root, compareFn!)
 	const pyramidDisplay = () => displayTreePyramid(root);
 
 	return {
@@ -64,6 +70,9 @@ const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnTyp
 		reduce,
 		forEach,
 		pyramidDisplpay: pyramidDisplay,
+		smallerThan,
+		greaterThan,
+		between
 	};
 };
 
@@ -105,6 +114,13 @@ tree.add(18);
 // // console.log(a ? a.element : "no");
 
 tree.pyramidDisplpay();
+
+console.log(tree.smallerThan(6))
+
+console.log(tree.greaterThan(6))
+
+console.log(tree.between(4, 13))
+
 
 // function inorderSucessor(node: NodeType<T>) {
 // 	throw new Error("Function not implemented.");

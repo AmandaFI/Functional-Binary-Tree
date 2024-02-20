@@ -111,6 +111,40 @@ export const lowestCommonAncestor = <T extends {}>(
 	else return false;
 };
 
+export const elementsSmallerThan = <T extends {}>(value: T, node: NodeType<T>, compareFn: CompareFnType<T>): Array<T> => {
+	const comparison = compareFn(node.element, value)
+	if (comparison === 1) {
+		if (isLeaf(node) || !node.left) return []
+		else return elementsSmallerThan(value, node.left, compareFn)
+	}
+	else if (comparison === 0) {
+		return node.left ? elementsSmallerThan(value, node.left, compareFn) : []
+	}
+	else {
+		return [...(node.left ? elementsSmallerThan(value, node.left, compareFn) : []), node.element, ...(node.right ? elementsSmallerThan(value, node.right, compareFn): [])]
+	}
+}
+
+export const elementsGreaterThan = <T extends {}>(value: T, node: NodeType<T>, compareFn: CompareFnType<T>): Array<T> => {
+	const comparison = compareFn(node.element, value)
+	if (comparison === -1) {
+		if (isLeaf(node) || !node.right) return []
+		else return elementsGreaterThan(value, node.right, compareFn)
+	}
+	else if (comparison === 0) {
+		return node.right ? elementsGreaterThan(value, node.right, compareFn) : []
+	}
+	else {
+		return [...(node.left ? elementsGreaterThan(value, node.left, compareFn) : []), node.element, ...(node.right ? elementsGreaterThan(value, node.right, compareFn): [])]
+	}
+}
+
+export const elementsBetween = <T extends {}>(leftValue: T, rightValue: T, node: NodeType<T>, compareFn: CompareFnType<T>): Array<T> => {
+	const greatherThanLeft = elementsGreaterThan(leftValue, node, compareFn)
+	const smallerThanRight = elementsSmallerThan(rightValue, node, compareFn)
+	return greatherThanLeft.filter(el => smallerThanRight.includes(el));
+}
+
 export const updateSubtreeLevels = <T extends {}>(node: NodeType<T>, newLevel: number, newLevelPosition: number) => {
 	if (!node) return;
 
