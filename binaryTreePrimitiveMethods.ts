@@ -111,32 +111,40 @@ export const lowestCommonAncestor = <T extends {}>(
 	else return false;
 };
 
-export const elementsSmallerThan = <T extends {}>(value: T, node: NodeType<T>, compareFn: CompareFnType<T>): Array<T> => {
+export const elementsSmallerThan = <T extends {}>(value: T, node: NodeType<T>, compareFn: CompareFnType<T>, includeEquality=false): Array<T> => {
 	const comparison = compareFn(node.element, value)
 	if (comparison === 1) {
 		if (isLeaf(node) || !node.left) return []
-		else return elementsSmallerThan(value, node.left, compareFn)
+		else return elementsSmallerThan(value, node.left, compareFn, includeEquality)
 	}
-	else if (comparison === 0) {
-		return node.left ? elementsSmallerThan(value, node.left, compareFn) : []
+	else if (!includeEquality && comparison === 0) {
+		return node.left ? elementsSmallerThan(value, node.left, compareFn, includeEquality) : []
 	}
 	else {
-		return [...(node.left ? elementsSmallerThan(value, node.left, compareFn) : []), node.element, ...(node.right ? elementsSmallerThan(value, node.right, compareFn): [])]
+		return [...(node.left ? elementsSmallerThan(value, node.left, compareFn, includeEquality) : []), node.element, ...(node.right ? elementsSmallerThan(value, node.right, compareFn, includeEquality): [])]
 	}
 }
 
-export const elementsGreaterThan = <T extends {}>(value: T, node: NodeType<T>, compareFn: CompareFnType<T>): Array<T> => {
+export const elementsSmallerThanOrEqualTo = <T extends {}>(value: T, node: NodeType<T>, compareFn: CompareFnType<T>) => {
+	return elementsSmallerThan(value, node, compareFn, true)
+}
+
+export const elementsGreaterThan = <T extends {}>(value: T, node: NodeType<T>, compareFn: CompareFnType<T>, includeEquality=false): Array<T> => {
 	const comparison = compareFn(node.element, value)
 	if (comparison === -1) {
 		if (isLeaf(node) || !node.right) return []
-		else return elementsGreaterThan(value, node.right, compareFn)
+		else return elementsGreaterThan(value, node.right, compareFn, includeEquality=false)
 	}
-	else if (comparison === 0) {
-		return node.right ? elementsGreaterThan(value, node.right, compareFn) : []
+	else if (!includeEquality && comparison === 0) {
+		return node.right ? elementsGreaterThan(value, node.right, compareFn, includeEquality=false) : []
 	}
 	else {
-		return [...(node.left ? elementsGreaterThan(value, node.left, compareFn) : []), node.element, ...(node.right ? elementsGreaterThan(value, node.right, compareFn): [])]
+		return [...(node.left ? elementsGreaterThan(value, node.left, compareFn, includeEquality=false) : []), node.element, ...(node.right ? elementsGreaterThan(value, node.right, compareFn, includeEquality=false): [])]
 	}
+}
+
+export const elementsGreaterThanOrEqualTo = <T extends {}>(value: T, node: NodeType<T>, compareFn: CompareFnType<T>) => {
+	return elementsGreaterThan(value, node, compareFn, true)
 }
 
 export const elementsBetween = <T extends {}>(leftValue: T, rightValue: T, node: NodeType<T>, compareFn: CompareFnType<T>): Array<T> => {
@@ -144,6 +152,23 @@ export const elementsBetween = <T extends {}>(leftValue: T, rightValue: T, node:
 	const smallerThanRight = elementsSmallerThan(rightValue, node, compareFn)
 	return greatherThanLeft.filter(el => smallerThanRight.includes(el));
 }
+
+// export const elementsBetween = <T extends {}>(leftValue: T, rightValue: T, node: NodeType<T>, compareFn: CompareFnType<T>): Array<T> => {
+// 	const leftValueComparison = compareFn(node.element, leftValue)
+// 	const rightValueComparison = compareFn(node.element, rightValue)
+
+// 	if (comparison === -1) {
+// 		if (isLeaf(node) || !node.right) return []
+// 		else return elementsGreaterThan(value, node.right, compareFn)
+// 	}
+// 	else if (comparison === 0) {
+// 		return node.right ? elementsGreaterThan(value, node.right, compareFn) : []
+// 	}
+// 	else {
+// 		// cL === 1 e cR === -1
+// 		return [...(node.left ? elementsGreaterThan(value, node.left, compareFn) : []), node.element, ...(node.right ? elementsGreaterThan(value, node.right, compareFn): [])]
+// 	}
+// }
 
 export const updateSubtreeLevels = <T extends {}>(node: NodeType<T>, newLevel: number, newLevelPosition: number) => {
 	if (!node) return;

@@ -14,7 +14,9 @@ import {
 	createNode,
 	elementsSmallerThan,
 	elementsGreaterThan,
-	elementsBetween
+	elementsBetween,
+	elementsSmallerThanOrEqualTo,
+	elementsGreaterThanOrEqualTo
 } from "./binaryTreePrimitiveMethods";
 import { CompareFnType, FilterFnType, ForEachFnType, MapFnType, NodeType, OrderType, ReduceFnType } from "./binaryTreeTypes";
 import { filterTree, forEachElement, mapTree, reduceTree, traverseTree, visitElements } from "./binaryTreeIterationMethods";
@@ -50,7 +52,9 @@ const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnTyp
 	const reduce = (fn: ReduceFnType<T>, acc: any) => reduceTree(fn, acc, root);
 	const forEach = (fn: ForEachFnType<T>) => forEachElement(fn, root);
 	const smallerThan = (element: T) => elementsSmallerThan(element, root, compareFn!);
+	const smallerThanOrEqualTo = (element: T) => elementsSmallerThanOrEqualTo(element, root, compareFn!)
 	const greaterThan = (element: T) => elementsGreaterThan(element, root, compareFn!)
+	const greaterThanOrEqualTo = (element: T) => elementsGreaterThanOrEqualTo(element, root, compareFn!)
 	const between = (leftElement: T, rightElement: T) => elementsBetween(leftElement, rightElement, root, compareFn!)
 	const pyramidDisplay = () => displayTreePyramid(root);
 
@@ -72,7 +76,9 @@ const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnTyp
 		pyramidDisplpay: pyramidDisplay,
 		smallerThan,
 		greaterThan,
-		between
+		between,
+		smallerThanOrEqualTo,
+		greaterThanOrEqualTo
 	};
 };
 
@@ -116,8 +122,10 @@ tree.add(18);
 tree.pyramidDisplpay();
 
 console.log(tree.smallerThan(6))
+console.log(tree.smallerThanOrEqualTo(6))
 
 console.log(tree.greaterThan(6))
+console.log(tree.greaterThanOrEqualTo(6))
 
 console.log(tree.between(4, 13))
 
