@@ -56,7 +56,7 @@ const binarySearchTree = <T extends {}>(rootElement: T, compareFn?: CompareFnTyp
 	const greaterThan = (element: T) => elementsGreaterThan(element, root, compareFn!)
 	const greaterThanOrEqualTo = (element: T) => elementsGreaterThanOrEqualTo(element, root, compareFn!)
 	// between inclusion variations on binaryTreePrimitiveMethods
-	const between = (leftElement: T, rightElement: T) => elementsBetween(leftElement, rightElement, root, compareFn!)
+	const between = (leftElement: T, rightElement: T, leftInclusive = false, rightInclusive = false) => elementsBetween(leftElement, rightElement, root, compareFn!, {leftInclusive, rightInclusive})
 	const pyramidDisplay = () => displayTreePyramid(root);
 
 	return {
@@ -129,7 +129,7 @@ console.log(tree.greaterThan(6))
 console.log(tree.greaterThanOrEqualTo(6))
 
 console.log(tree.between(4, 13))
-// console.log(tree.between(4, 13, true, true))
+console.log(tree.between(4, 13, true, true))
 
 
 
