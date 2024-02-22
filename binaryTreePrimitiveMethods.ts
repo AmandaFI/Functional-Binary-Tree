@@ -138,7 +138,7 @@ export const elementsSmallerThan = <T extends {}>(value: T, node: NodeType<T>, c
 
 		const rightElements = node.right ? elementsSmallerThan(value, node.right, compareFn, includeEquality) : []
 
-		if (comparison && !includeEquality) return [...leftElements, ...rightElements]
+		if (comparison === 0 && !includeEquality) return [...leftElements, ...rightElements]
 
 		return [...leftElements, node.element, ...rightElements]
 	} 
@@ -150,15 +150,17 @@ export const elementsSmallerThanOrEqualTo = <T extends {}>(value: T, node: NodeT
 
 export const elementsGreaterThan = <T extends {}>(value: T, node: NodeType<T>, compareFn: CompareFnType<T>, includeEquality=false): Array<T> => {
 	const comparison = compareFn(node.element, value)
-	if (comparison === -1) {
-		if (isLeaf(node) || !node.right) return []
-		else return elementsGreaterThan(value, node.right, compareFn, includeEquality=false)
-	}
-	else if (!includeEquality && comparison === 0) {
-		return node.right ? elementsGreaterThan(value, node.right, compareFn, includeEquality=false) : []
-	}
+
+	// node element smaller than value
+	if (comparison === -1) return node.right ? elementsGreaterThan(value, node.right, compareFn, includeEquality=false) : []
 	else {
-		return [...(node.left ? elementsGreaterThan(value, node.left, compareFn, includeEquality=false) : []), node.element, ...(node.right ? elementsGreaterThan(value, node.right, compareFn, includeEquality=false): [])]
+		const leftElements = node.left ? elementsSmallerThan(value, node.left, compareFn, includeEquality) : []
+
+		const rightElements = node.right ? visitElements("Inorder", node.right) : []
+
+		if (comparison === 0 && !includeEquality) return [...leftElements, ...rightElements]
+
+		return [...leftElements, node.element, ...rightElements]
 	}
 }
 
