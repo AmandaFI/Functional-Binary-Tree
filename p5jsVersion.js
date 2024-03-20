@@ -623,8 +623,9 @@ const button = (title, x, y, pressedFn) => {
 };
 
 function setup() {
-	createCanvas(800, 600);
+	// createCanvas(800, 600);
 	//createCanvas(1400, 800);
+	createCanvas(windowWidth, windowHeight);
 
 	background(colors.BACKGROUND);
 
@@ -650,6 +651,11 @@ function setup() {
 	parentBtn = button("\u25B2", 26, 60, moveToParent);
 	leftChildBtn = button("\u276E", 12, 83, moveToLeftChild);
 	rightChildBtn = button("\u276F", 44, 83, moveToRightChild);
+}
+
+// Redraws the Canvas when resized.
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
 }
 
 function draw() {}
